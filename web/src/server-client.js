@@ -20,6 +20,13 @@
       return this.health;
     },
 
+    async request(path, options = {}, timeoutMs = 45000) {
+      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), timeoutMs);
+      try { return await fetch(this.base + path, { ...options, signal: ctl.signal }); }
+      catch (e) { if (e.name === 'AbortError') throw new Error('The server took too long to respond. Please try again.'); throw e; }
+      finally { clearTimeout(timer); }
+    },
+
     async _err(r) { let m = r.status + ' ' + r.statusText; try { const j = await r.json(); if (j.detail) m = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail); } catch (_) {} return new Error(m); },
 
     /** Offline render on the server. Returns {data: Float32Array, infos, latency, processingMs, backend}. */
@@ -27,7 +34,7 @@
       const fd = new FormData();
       fd.append('audio', new Blob([data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)], { type: 'application/octet-stream' }), 'take.f32');
       fd.append('fs', String(fs)); fd.append('profile', JSON.stringify(params)); fd.append('chunk', String(chunk));
-      const r = await fetch(this.base + '/api/render', { method: 'POST', body: fd });
+      const r = await this.request('/api/render', { method: 'POST', body: fd });
       if (!r.ok) throw await this._err(r);
       const j = await r.json();
       const bin = atob(j.audio), u8 = new Uint8Array(bin.length);
@@ -41,7 +48,7 @@
       return {
         name: 'server', label: 'server',
         async interpret(text, ctx) {
-          const r = await fetch(self.base + '/api/interpret', {
+          const r = await self.request('/api/interpret', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text, profile: ctx.profile, analysis: ctx.analysis && ctx.analysis.ok ? ctx.analysis : null, reference: ctx.reference, history: ctx.history || [] }),
           });
@@ -61,7 +68,7 @@
         ws, ready: false, queue: [], sentAt: [], rtt: [], underruns: 0, onInfo: null, onError: null, latencySamples: 0,
         send(block) {
           if (!this.ready || ws.readyState !== 1) return false;
-          if (ws.bufferedAmount > 1 << 18) return false; // back-pressure: drop rather than build delay
+          if (this.sentAt.length >= 8 || ws.bufferedAmount > 1 << 18) return false; // back-pressure: drop rather than build delay
           ws.send(block.buffer.slice(block.byteOffset, block.byteOffset + block.byteLength)); this.sentAt.push(performance.now()); return true;
         },
         take(n) {
@@ -71,15 +78,21 @@
         },
         setProfile(p) { if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'profile', profile: p })); },
         setBypass(v) { if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'bypass', value: !!v })); },
-        close() { try { ws.close(); } catch (_) {} },
+        close() { this.onError = null; try { ws.close(); } catch (_) {} },
       };
       s.opened = new Promise((resolve, reject) => {
+        const timer = setTimeout(() => { reject(new Error('The live server did not respond.')); ws.close(); }, 10000);
+        ws.onclose = () => {
+          clearTimeout(timer);
+          if (!s.ready) reject(new Error('The live server disconnected before it was ready.'));
+          else { s.ready = false; if (s.onError) s.onError('Live connection closed.'); }
+        };
         ws.onopen = () => ws.send(JSON.stringify({ type: 'start', sampleRate: fs, profile: params, bypass }));
-        ws.onerror = () => reject(new Error('Could not connect to the voice server stream.'));
+        ws.onerror = () => { clearTimeout(timer); reject(new Error('Could not connect to the voice server stream.')); };
         ws.onmessage = (ev) => {
           if (typeof ev.data === 'string') {
             const m = JSON.parse(ev.data);
-            if (m.type === 'ready') { s.ready = true; s.latencySamples = m.latencySamples; resolve(s); }
+            if (m.type === 'ready') { s.ready = true; s.latencySamples = m.latencySamples; clearTimeout(timer); resolve(s); }
             else if (m.type === 'info' && s.onInfo) s.onInfo(m);
             else if (m.type === 'error') { if (!s.ready) reject(new Error(m.message)); else if (s.onError) s.onError(m.message); }
             return;

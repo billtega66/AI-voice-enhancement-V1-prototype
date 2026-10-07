@@ -154,3 +154,74 @@ def test_served_with_llm_gateway(page_factory, gateway_server_url):
     assert "now 4.5" in reqs[1]["messages"][0]["content"]
     assert _json.loads(reqs[1]["messages"][1]["content"])["recentConversation"][0]["role"] == "user"
     assert not pg.errors, pg.errors
+
+
+def test_studio_export_undo_and_keyboard_seek(page_factory, dist_url):
+    import json
+    import wave
+    pg = page_factory(dist_url)
+    neutral_warmth = ev(pg, 'window.__ve.store.get().warmthDb')
+    pg.click('#sampleBtn')
+    pg.wait_for_function("!document.querySelector('#downloadAudio').disabled")
+    pg.focus('#bar'); pg.keyboard.press('ArrowRight')
+    assert float(pg.get_attribute('#bar', 'aria-valuenow')) == 5
+    with pg.expect_download() as pending:
+        pg.click('#downloadAudio')
+    with wave.open(str(pending.value.path()), 'rb') as audio:
+        assert audio.getnchannels() == 1 and audio.getsampwidth() == 2
+        assert abs(audio.getnframes() / audio.getframerate() - 14) < .1
+    pg.click('#openMixer')
+    pg.fill('#n-warmthDb', '4.5'); pg.dispatch_event('#n-warmthDb', 'change')
+    assert ev(pg, 'window.__ve.store.get().warmthDb') == 4.5
+    pg.click('#mxBack'); pg.click('#undoBtn')
+    assert ev(pg, 'window.__ve.store.get().warmthDb') == neutral_warmth
+    pg.fill('#profName', '   '); pg.click('#useBtn')
+    assert 'My voice' in pg.inner_text('#activeChip')
+    pg.click('#openMixer'); pg.click('summary:has-text("Profile data & export")')
+    with pg.expect_download() as pending:
+        pg.click('#saveJson')
+    assert json.loads(pending.value.path().read_text())['params']['warmthDb'] == neutral_warmth
+    assert not pg.errors, pg.errors
+
+
+def test_ai_preserves_concurrent_manual_edit(page_factory, dist_url):
+    pg = page_factory(dist_url)
+    ev(pg, """window.__ve.S.interpreter = {name:'test', interpret: async () => {
+        await new Promise(r => setTimeout(r, 700));
+        return {reply:'Warmer and clearer.', changes:{warmthDb:3, presenceDb:2}};
+    }}""")
+    pg.fill('#prompt', 'warmer and clearer'); pg.click('#send')
+    ev(pg, "window.__ve.store.set({warmthDb:4.5}, 'mixer')")
+    pg.wait_for_function('!window.__ve.S.busy')
+    assert ev(pg, 'window.__ve.store.get().warmthDb') == 4.5
+    assert ev(pg, 'window.__ve.store.get().presenceDb') == 2
+    assert 'Kept the settings you edited' in pg.inner_text('#msgs')
+    assert pg.is_enabled('#send')
+
+
+def test_new_recording_wins_over_stale_preview(page_factory, dist_url):
+    pg = page_factory(dist_url)
+    ev(pg, """window.__ve.S.engine='server';
+    window.VoiceServer.render = (data, fs) => new Promise(resolve => {
+      const first = !window._renderCount; window._renderCount = (window._renderCount || 0) + 1;
+      setTimeout(() => resolve({data:new Float32Array(data.length).fill(first ? .1 : .2), infos:[], backend:'test'}), first ? 1000 : 50);
+    });""")
+    pg.click('#sampleBtn')
+    pg.click('#sampleBtn')
+    pg.wait_for_function('window.__ve.preview.enhData && window.__ve.preview.enhData[0] > .19')
+    pg.wait_for_timeout(1200)
+    assert ev(pg, 'window.__ve.preview.enhData[0]') == pytest.approx(.2)
+    assert ev(pg, 'window.__ve.preview.renders') == 1
+
+
+@pytest.mark.parametrize('width,height', [(375,812), (812,375), (768,1024)])
+def test_studio_responsive_and_theme(page_factory, dist_url, width, height):
+    pg = page_factory(dist_url, viewport={'width':width,'height':height}, reduced_motion='reduce')
+    assert ev(pg, 'document.documentElement.scrollWidth <= window.innerWidth')
+    pg.click('#themeBtn')
+    assert pg.get_attribute('html', 'data-theme') == 'light'
+    pg.reload(); pg.wait_for_function('window.__ve && window.__ve.ready')
+    assert pg.get_attribute('html', 'data-theme') == 'light'
+    pg.click('[data-view=mixer]')
+    assert ev(pg, 'document.documentElement.scrollWidth <= window.innerWidth')
+    assert not pg.errors, pg.errors

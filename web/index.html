@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Voice Enhancer Prototype</title>
+<title>Voice Enhancer · Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -158,28 +158,152 @@ textarea.code{min-height:180px;resize:vertical}
 .tag.ai{background:var(--enh-soft);color:var(--enh)}
 .pass{color:var(--good);font-weight:600} .fail{color:var(--bad);font-weight:600}
 pre.mermaid{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;font-size:12px}
+
+/* Studio design: neutral surfaces, mint accents and clear audio-first hierarchy. */
+:root[data-theme="dark"]{--bg:#101216;--surface:#191c22;--sunk:#111419;--ink:#f0f2f5;--muted:#a5adb9;--line:#343b46;--orig:#697786;--enh:#c6ef86;--enh-soft:rgba(198,239,134,.1);--good:#c6ef86;--focus:#c6ef86;--warn:#f3c17d;--bad:#ff9d9d;--r:18px;--shadow:0 8px 30px rgba(0,0,0,.12)}
+:root[data-theme="light"]{--bg:#f3f5f2;--surface:#fff;--sunk:#edf1eb;--ink:#202a24;--muted:#57645a;--line:#cbd4ca;--orig:#8b9a8c;--enh:#356747;--enh-soft:rgba(53,103,71,.09);--good:#356747;--focus:#356747;--r:18px;--shadow:0 8px 30px rgba(25,40,25,.04)}
+body{font-size:16px}
+button,a,input,textarea,select{touch-action:manipulation}
+button,.btn,.seg button{transition:background .18s,border-color .18s,color .18s,box-shadow .18s;min-height:44px}
+button:active:not(:disabled){filter:brightness(.9)}
+button:disabled{cursor:not-allowed;opacity:.45}
+.btn{border-radius:10px;padding:11px 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:500}
+.btn:hover:not(:disabled),.suggest button:hover:not(:disabled){background:var(--enh-soft);border-color:var(--enh)}
+.btn.primary,.btn.dark{background:var(--enh);border-color:var(--enh);color:var(--bg);font-weight:700}
+:root[data-theme="light"] .btn.primary,:root[data-theme="light"] .btn.dark{color:white}
+.btn.primary:hover:not(:disabled),.btn.dark:hover:not(:disabled){background:var(--enh);box-shadow:0 0 0 4px var(--enh-soft)}
+.btn.stop{background:var(--bad);color:var(--bg)}
+.btn.sm{min-height:40px;padding:8px 12px}
+.top{padding:16px max(28px,calc((100vw - 1344px)/2));gap:20px;min-height:88px;background:var(--bg)}
+.brand{text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:12px;font-weight:700;font-size:19px;letter-spacing:-.6px}
+.brand-mark{display:grid;place-items:center;background:var(--enh);color:var(--bg);width:42px;height:42px;border-radius:12px}
+.brand-mark svg{width:24px;height:24px;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.brand-sub{display:block;color:var(--muted);font-size:9px;letter-spacing:1.8px;font-weight:500;margin-top:2px}
+.chip{font-size:12px;border-radius:8px;background:var(--surface);padding:4px 10px;max-width:350px}
+.chip span{overflow-wrap:anywhere}
+.chip .btn{min-height:32px}
+.seg{background:var(--sunk);padding:4px;border-radius:11px;gap:4px;overflow:visible}
+.seg button{border-radius:7px;padding:7px 18px;min-height:36px}
+.seg button+button{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 5px rgba(0,0,0,.12)}
+.theme-toggle{background:transparent;font-size:12px}
+.studio-intro{max-width:1400px;padding:32px 28px 26px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:1.8px;color:var(--muted);margin-bottom:7px}
+.studio-intro h1{font-size:clamp(30px,3vw,42px);line-height:1.16;letter-spacing:-1.5px;font-weight:600}
+.intro-copy{margin-top:10px;color:var(--muted);font-size:14px}
+.session-info{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.connection{display:flex;align-items:center;gap:8px;font-size:13px}
+.simple{max-width:1400px;padding:0 28px 40px;grid-template-columns:minmax(0,1fr) minmax(320px,390px);gap:24px;align-items:start}
+.simple>.panel:not(.chat){grid-column:1}
+.panel{padding:24px;border-radius:var(--r);box-shadow:var(--shadow)}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+h2{font-size:20px;font-weight:600;letter-spacing:-.5px}
+h3{font-size:16px}
+.pill{border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:11px;white-space:nowrap;color:var(--muted)}
+.pill.ready{color:var(--enh);background:var(--enh-soft);border-color:transparent}
+.sample-panel>.btns{gap:10px}
+.status{font-size:13px;line-height:1.6;margin-top:12px}
+.summary{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;font-size:12px}
+.summary li{background:var(--sunk);border-radius:6px;padding:6px 10px}
+.summary li+li{margin-top:0}
+.preview-panel{background:var(--surface)}
+.player{gap:16px;display:grid;grid-template-columns:52px 1fr auto}
+.player>.seg{justify-self:start}
+.seg.big button{padding:8px 18px;font-size:13px}
+.waveform-wrap{grid-row:2;grid-column:1/-1;width:100%;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--sunk)}
+.bar{width:100%;height:112px;min-width:0}
+.bar[aria-disabled="true"]{cursor:default}
+.wave-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;pointer-events:none}
+.time{grid-column:3;grid-row:1;font-size:12px;white-space:nowrap}
+.play{width:52px;height:52px;color:var(--bg)}
+:root[data-theme="dark"] .play{color:var(--bg)}
+.preview-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:14px;border-top:1px solid var(--line);margin-top:16px}
+.descs{gap:16px 24px;margin-bottom:22px}
+.desc .row{font-size:12px;margin-bottom:7px;color:var(--muted)}
+.desc .row output{color:var(--ink);font-variant-numeric:tabular-nums}
+.track{height:5px}
+.name{min-height:44px;background:var(--sunk);font-size:14px}
+.text-btn{border:0;background:none;color:var(--enh);font-size:13px;cursor:pointer;padding:0;min-height:44px}
+.chat{grid-column:2;grid-row:1 / span 4;position:sticky;top:20px;min-height:620px;max-height:calc(100vh - 40px);padding:0;overflow:hidden}
+.chat-head{padding:24px 22px 18px;align-items:start;display:block}
+.chat-head .who{display:block;font-size:11px;margin-top:10px;color:var(--muted);overflow-wrap:anywhere}
+.msgs{padding:20px;min-height:180px;scrollbar-width:thin}
+.empty{padding:22px 8px;max-width:290px;align-self:center}
+.empty h3{color:var(--ink);font-size:19px;letter-spacing:-.4px;margin-bottom:10px}
+.empty p{margin-bottom:16px;font-size:14px;line-height:1.7}
+.assistant-mark{display:flex;align-items:center;justify-content:center;margin:0 auto 20px;width:50px;height:50px;border-radius:16px;background:var(--enh-soft);color:var(--enh);font-size:27px}
+.msg{font-size:14px;max-width:96%;line-height:1.65;padding:14px 16px}
+.msg.user{background:var(--enh-soft);color:var(--ink);border:1px solid var(--line)}
+.msg.ai{background:var(--sunk)}
+.msg.thinking{color:var(--muted)}
+.suggest{display:grid;grid-template-columns:1fr 1fr;padding:0 20px 16px;gap:8px}
+.suggest button{border-radius:9px;min-height:44px;text-align:left;padding:10px 12px;font-size:12px;line-height:1.4;background:var(--surface)}
+.composer{padding:16px 20px 0;align-items:flex-end;gap:8px}
+.composer textarea{min-width:0;min-height:86px;background:var(--sunk);font-size:13px;padding:12px;resize:vertical}
+.composer .btn{padding:11px 13px}
+.composer-hint{font-size:10px;color:var(--muted);padding:10px 20px 18px}
+#volumeValue{font-size:12px;color:var(--muted);min-width:44px}
+.live-panel .btns{gap:12px}
+.mixer{max-width:1400px;padding:0 28px 40px;gap:20px}
+.transport{position:static;padding:18px;border-radius:14px;gap:12px}
+.mod{border-radius:14px;padding:20px}
+.mod-head{margin-bottom:16px}
+.mod-head .n{color:var(--enh)}
+.mod.off{opacity:1}.mod.off h3{color:var(--muted)}
+.param{padding:8px 0}
+.param input[type=range]{min-height:28px;cursor:pointer}
+.param input[type=number]{min-height:36px;background:var(--sunk)}
+.switch{width:42px;height:26px}.switch::after{width:20px;height:20px;top:3px;left:3px}.switch:checked::after{left:19px;background:var(--bg)}
+.meters{border-radius:14px}.meter{padding:18px 14px}.meter .v{font-size:24px}
+.side{gap:16px}details.box{border-radius:14px;padding:18px}details.box>summary{min-height:28px;line-height:1.6}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:1100px){.simple{grid-template-columns:minmax(0,1fr) minmax(290px,340px);gap:18px}.panel{padding:20px}.chat{padding:0}.top{padding:14px 24px}.chip{max-width:280px}.brand-sub{display:none}}
+@media(max-width:840px){.simple{display:flex;flex-direction:column;padding:0 20px 32px}.stack{display:contents}.sample-panel{order:1}.chat{order:2;position:static;min-height:400px;max-height:550px;width:100%}.preview-panel{order:3}.profile-panel{order:4}.live-panel{order:5}.panel{width:100%}.studio-intro{padding:24px 20px}.session-info{display:none}.top{gap:12px}.top .spacer{display:none}.top .seg{margin-left:auto}.top .chip{order:4;max-width:100%}.top .theme-toggle{min-height:36px}.mixer{padding:0 20px 32px}.msgs{min-height:150px}.empty{padding:12px}.assistant-mark{margin-bottom:12px}.brand{font-size:16px}.brand-mark{width:36px;height:36px}.composer-hint{padding-bottom:14px}}
+@media(max-width:480px){.top{padding:14px 16px;gap:10px}.top .seg button{padding:7px 12px}.theme-toggle{order:5;margin-left:auto}.simple,.mixer{padding-left:16px;padding-right:16px}.studio-intro{padding:24px 16px}.panel{padding:18px}.chat{padding:0}.section-head{align-items:start}.pill{white-space:normal;text-align:right}.sample-panel .btns{display:grid;grid-template-columns:1fr 1fr}.sample-panel #recBtn{grid-column:1/-1}.sample-panel .btn{font-size:12px;padding:10px}.preview-footer{flex-wrap:wrap}.preview-footer .btn{width:100%}.descs{grid-template-columns:1fr 1fr;gap:16px}.player{gap:10px;grid-template-columns:44px 1fr auto}.play{width:44px;height:44px}.seg.big button{padding:7px 10px;font-size:12px}.time{font-size:10px;min-width:0}.bar{height:96px}.meters{grid-template-columns:repeat(2,minmax(0,1fr))}.meter:nth-child(2n+1){border-left:0}.meter:nth-child(n+3){border-top:1px solid var(--line)}.transport{gap:10px;padding:14px}.transport .src{width:100%}.transport .btn{font-size:12px}.mgrid{grid-template-columns:1fr}.mod{padding:16px}.composer{padding:14px 16px 0}.suggest{padding-left:16px;padding-right:16px}.chat-head{padding:20px 18px 14px}.chip.none{font-size:11px}}
+@media(max-width:840px){.empty{padding:4px 8px}.empty .assistant-mark{width:32px;height:32px;font-size:20px;margin-bottom:8px}.empty h3{font-size:17px;margin-bottom:6px}.empty p{font-size:13px;margin-bottom:6px;line-height:1.5}.empty>.small{display:none}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
 </style>
 </head>
 <body>
 <header class="top">
-  <h1>Voice Enhancer</h1>
+  <a class="brand" href="#simpleView" aria-label="Voice Enhancer home"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9v6m4-10v14m4-16v18m4-15v12m4-9v6"/></svg></span><span>Voice Enhancer<span class="brand-sub">PERSONAL AUDIO STUDIO</span></span></a>
   <span class="chip none" id="activeChip">No active voice yet</span>
   <div class="spacer"></div>
   <div class="seg" role="group" aria-label="View">
-    <button data-view="simple" aria-pressed="true">Simple</button>
+    <button data-view="simple" aria-pressed="true">Studio</button>
     <button data-view="mixer" aria-pressed="false">Mixer</button>
   </div>
+  <button class="btn theme-toggle" id="themeBtn" aria-label="Switch to light theme">Light mode</button>
 </header>
+<section class="studio-intro" aria-label="Studio overview">
+  <div><p class="eyebrow">SOUND LIKE YOURSELF. AT YOUR BEST.</p><h1>Your voice, refined.</h1><p class="intro-copy">Less noise. More presence. Create a sound that feels like you.</p></div>
+  <div class="session-info"><span class="connection" id="connectionStatus" role="status"><span class="dot"></span>Local studio</span><span class="small muted">Your audio, your controls</span></div>
+</section>
 
 <!-- ================= SIMPLE VIEW ================= -->
 <main id="simpleView" class="simple">
+
+
+    <section class="panel sample-panel" aria-label="Voice sample">
+      <div class="section-head"><div><p class="eyebrow">01 / CAPTURE</p><h2>Start with your voice</h2></div><span class="pill" id="sampleBadge">No recording</span></div>
+      <div class="btns">
+        <button class="btn primary" id="recBtn">Record</button>
+        <button class="btn" id="sampleBtn">Use sample voice</button>
+        <button class="btn" id="uploadBtn" type="button">Upload audio</button>
+        <input type="file" id="fileIn" accept="audio/*" hidden>
+      </div>
+      <p class="status" id="recStatus" role="status" aria-live="polite">Record yourself reading a few sentences (about 10 seconds), or try the built-in sample.</p>
+      <ul class="summary" id="plainSummary" hidden></ul>
+    </section>
+
   <section class="panel chat" aria-label="AI chat">
     <div class="chat-head">
-      <h2>Describe your voice</h2>
+      <div><p class="eyebrow">YOUR SOUND, IN YOUR WORDS</p><h2>AI sound assistant</h2></div>
       <span class="small muted who" id="aiWho">AI: offline interpreter</span>
     </div>
     <div class="msgs" id="msgs" aria-live="polite">
-      <p class="empty" id="chatEmpty">Tell me how you want to sound. I will turn it into settings and update the preview so you can hear the difference.</p>
+      <div class="empty" id="chatEmpty"><span class="assistant-mark" aria-hidden="true">✦</span><h3>What’s your ideal sound?</h3><p>Tell me what you want to change. I’ll adjust your voice settings so you can hear the difference.</p><span class="small muted">Try a suggestion below to get started.</span></div>
     </div>
     <div class="suggest" id="suggest">
       <button>Warm, clear podcast voice</button>
@@ -188,50 +312,37 @@ pre.mermaid{background:var(--surface);border:1px solid var(--line);border-radius
       <button>Softer S sounds</button>
     </div>
     <form class="composer" id="composer" autocomplete="off">
-      <textarea id="prompt" rows="1" placeholder="Describe how you want your voice to sound..." aria-label="Describe how you want your voice to sound"></textarea>
-      <button class="btn dark" id="send" type="submit">Send</button>
-    </form>
+      <textarea id="prompt" rows="2" maxlength="2000" placeholder="Describe how you want your voice to sound..." aria-label="Describe how you want your voice to sound"></textarea>
+      <button class="btn primary" id="send" type="submit" aria-label="Send voice request">Send <span aria-hidden="true">↗</span></button>
+    </form><p class="composer-hint">Enter to send · Shift + Enter for a new line</p>
   </section>
 
-  <div class="stack">
-    <section class="panel" aria-label="Voice sample">
-      <h2>1. Your voice sample</h2>
-      <div class="btns">
-        <button class="btn primary" id="recBtn">Record</button>
-        <button class="btn" id="sampleBtn">Use sample voice</button>
-        <label class="btn" for="fileIn">Upload a recording</label>
-        <input type="file" id="fileIn" accept="audio/*" hidden>
-      </div>
-      <p class="status" id="recStatus" role="status" aria-live="polite">Record yourself reading a few sentences (about 10 seconds), or try the built-in sample.</p>
-      <ul class="summary" id="plainSummary" hidden></ul>
-    </section>
-
-    <section class="panel" aria-label="Preview">
-      <h2>2. Preview</h2>
+    <section class="panel preview-panel" aria-label="Preview">
+      <div class="section-head"><div><p class="eyebrow">02 / LISTEN & COMPARE</p><h2>Hear the difference</h2></div><span class="pill" id="previewBadge">Waiting for audio</span></div>
       <div class="player">
         <button class="play" id="playBtn" disabled aria-label="Play preview"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4v16l13-8z"/></svg></button>
         <div class="seg big" role="group" aria-label="Compare">
           <button data-ab="original" aria-pressed="false">Original</button>
           <button data-ab="enhanced" aria-pressed="true">Enhanced</button>
         </div>
-        <div class="bar" id="bar" aria-label="Playback position"><canvas id="barCv"></canvas></div>
+        <div class="waveform-wrap"><div class="bar" id="bar" role="slider" tabindex="0" aria-label="Playback position" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-disabled="true"><canvas id="barCv" aria-hidden="true"></canvas><div class="wave-empty" id="waveEmpty">Your waveform will appear here</div></div></div>
         <span class="time" id="time">0.0 / 0.0 s</span>
       </div>
-      <p class="status small muted" id="previewStatus">No sample yet.</p>
+      <p class="status small muted" id="previewStatus" role="status">Load a recording to listen to your original and enhanced voice.</p><div class="preview-footer"><span class="small muted">Switch versions as you listen.</span><button class="btn sm" id="downloadAudio" disabled>Download enhanced WAV <span aria-hidden="true">↓</span></button></div>
     </section>
 
-    <section class="panel" aria-label="Voice profile">
-      <h2>3. Voice profile</h2>
+    <section class="panel profile-panel" aria-label="Voice profile">
+      <div class="section-head"><div><p class="eyebrow">03 / MAKE IT YOURS</p><h2>Your sound profile</h2></div><button class="btn sm" id="undoBtn" disabled>Undo change</button></div>
       <div class="descs" id="descs"></div>
       <div class="btns">
-        <input class="name" id="profName" value="My voice" aria-label="Profile name" maxlength="40">
+        <label class="sr-only" for="profName">Profile name</label><input class="name" id="profName" value="My voice" aria-label="Profile name" maxlength="40">
         <button class="btn primary" id="useBtn">Use voice</button>
       </div>
-      <p class="status small" id="useStatus" role="status" aria-live="polite"></p>
+      <p class="status small" id="useStatus" role="status" aria-live="polite">Save your settings as the profile for live monitoring.</p><button class="text-btn" id="openMixer">Fine-tune in the Mixer <span aria-hidden="true">→</span></button>
     </section>
 
-    <section class="panel" aria-label="Live microphone">
-      <h2>4. Live microphone</h2>
+    <section class="panel live-panel" aria-label="Live microphone">
+      <div class="section-head"><div><p class="eyebrow">04 / GO LIVE</p><h2>Live microphone</h2></div><span class="pill" id="liveBadge">Off</span></div>
       <p class="small muted" id="liveNote">Runs your active voice profile on the microphone in real time. Wear headphones to avoid feedback.</p>
       <div class="btns" style="margin-top:10px">
         <button class="btn" id="liveBtn">Start live voice</button>
@@ -239,18 +350,17 @@ pre.mermaid{background:var(--surface);border:1px solid var(--line);border-radius
           <button data-live="original" aria-pressed="false">Original</button>
           <button data-live="enhanced" aria-pressed="true">Enhanced</button>
         </div>
-        <label class="small muted" for="liveVol">Volume</label>
-        <input type="range" id="liveVol" min="0" max="100" value="0" style="width:110px;accent-color:var(--enh)">
+        <label class="small muted" for="liveVol">Monitor volume</label>
+        <input type="range" id="liveVol" min="0" max="100" value="0" style="width:110px;accent-color:var(--enh)" aria-describedby="volumeValue"><output id="volumeValue" for="liveVol">Muted</output>
       </div>
-      <p class="status small" id="liveStatus" role="status" aria-live="polite"></p>
+      <p class="status small" id="liveStatus" role="status" aria-live="polite">Headphone monitoring only. This does not create a virtual microphone for other apps.</p>
     </section>
-  </div>
 </main>
 
 <!-- ================= MIXER VIEW ================= -->
 <main id="mixerView" class="mixer" hidden>
   <div class="transport">
-    <button class="btn" id="mxBack">Back to simple view</button>
+    <button class="btn" id="mxBack">Back to studio</button>
     <button class="btn" id="mxPlay" disabled>Play preview</button>
     <button class="btn" id="mxLive">Start live</button>
     <label class="btns small"><input type="checkbox" class="switch" id="bypass"> Bypass all processing</label>
@@ -287,12 +397,12 @@ pre.mermaid{background:var(--surface);border:1px solid var(--line);border-radius
         <textarea class="code" id="refText" spellcheck="false" aria-label="Reference target JSON"></textarea>
         <div class="btns" style="margin-top:8px"><button class="btn sm dark" id="refApply">Apply reference</button><button class="btn sm" id="refReset">Restore defaults</button><span class="small" id="refMsg"></span></div>
       </details>
-      <details class="box" open>
-        <summary>Voice profile (shared by AI and Mixer)</summary>
+      <details class="box">
+        <summary>Profile data & export</summary>
         <pre class="code" id="profJson"></pre>
-        <div class="btns" style="margin-top:8px"><button class="btn sm" id="copyJson">Copy JSON</button><button class="btn sm" id="saveJson" hidden>Save .json</button><button class="btn sm" id="resetProf">Reset to neutral</button><span class="small" id="jsonMsg"></span></div>
+        <div class="btns" style="margin-top:8px"><button class="btn sm" id="copyJson">Copy JSON</button><button class="btn sm" id="saveJson">Save .json</button><button class="btn sm" id="resetProf">Reset to neutral</button><span class="small" id="jsonMsg" role="status"></span></div>
       </details>
-      <details class="box" open>
+      <details class="box">
         <summary>Change history</summary>
         <div class="log" id="log"><span class="muted">No changes yet.</span></div>
       </details>
