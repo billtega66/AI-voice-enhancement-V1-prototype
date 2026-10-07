@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Voice Enhancer Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF0F2; --surface:#FFFFFF; --sunk:#E4E9EC; --ink:#16212B; --muted:#56636F; --line:#CDD5DB;
+  --orig:#8B97A3; --enh:#0F6E7A; --enh-soft:rgba(15,110,122,.12); --warn:#A15C07; --bad:#B42318; --good:#16794A; --focus:#2F6FEB;
+  --font:"Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --r:10px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F151A; --surface:#172028; --sunk:#111920; --ink:#E3E9ED; --muted:#93A1AC; --line:#2A3641;
+  --orig:#6E7B87; --enh:#43C2C8; --enh-soft:rgba(67,194,200,.14); --warn:#E3A44A; --bad:#F2796D; --good:#5CC98F; --focus:#7AA7FF; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0F151A; --surface:#172028; --sunk:#111920; --ink:#E3E9ED; --muted:#93A1AC; --line:#2A3641;
+  --orig:#6E7B87; --enh:#43C2C8; --enh-soft:rgba(67,194,200,.14); --warn:#E3A44A; --bad:#F2796D; --good:#5CC98F; --focus:#7AA7FF; color-scheme:dark;}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--font);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1,h2,h3,p{margin:0}
+h2{font-size:16px;font-weight:600}
+h3{font-size:14px;font-weight:600}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.bad{color:var(--bad)} .warn{color:var(--warn)} .good{color:var(--good)}
+[hidden]{display:none!important}
+
+.top{display:flex;align-items:center;gap:14px;padding:12px 24px;border-bottom:1px solid var(--line);background:var(--surface);flex-wrap:wrap}
+.top h1{font-size:18px;font-weight:600}
+.top .spacer{flex:1}
+.chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 12px}
+.chip b{font-weight:600}
+.chip.none{padding-right:12px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good);flex:none}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px;line-height:1.2}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--enh);border-color:var(--enh);color:#fff;font-weight:600}
+:root[data-theme="dark"] .btn.primary{color:#0F151A}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.primary{color:#0F151A}}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:var(--surface);font-weight:600}
+.btn.stop{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn.sm{padding:4px 10px;font-size:13px;border-radius:6px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:7px 16px;cursor:pointer;font-size:14px;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface);font-weight:600}
+.seg.big button{padding:10px 22px;font-size:15px}
+
+/* ---------- simple view ---------- */
+.simple{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px;padding:20px 24px 40px;max-width:1280px;margin:0 auto}
+@media (max-width:920px){.simple{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
+.stack{display:flex;flex-direction:column;gap:16px}
+.panel>h2{margin-bottom:10px}
+.chat{display:flex;flex-direction:column;min-height:560px;max-height:calc(100vh - 120px);padding:0}
+.chat-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.chat-head .who{margin-left:auto}
+.msgs{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:88%;padding:10px 13px;border-radius:12px;font-size:14.5px;white-space:pre-wrap}
+.msg.user{align-self:flex-end;background:var(--ink);color:var(--surface);border-bottom-right-radius:4px}
+.msg.ai{align-self:flex-start;background:var(--sunk);border-bottom-left-radius:4px}
+.msg.ai.err{border-left:3px solid var(--warn)}
+.msg details{margin-top:6px;font-size:13px;color:var(--muted)}
+.msg details summary{cursor:pointer}
+.msg ul{margin:6px 0 0;padding-left:18px}
+.empty{color:var(--muted);font-size:14px;margin:auto 0;text-align:center;padding:30px 10px}
+.suggest{display:flex;gap:6px;flex-wrap:wrap;padding:0 18px 10px}
+.suggest button{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer;color:var(--ink)}
+.composer{display:flex;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--line)}
+.composer textarea{flex:1;resize:none;min-height:66px;max-height:140px;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:var(--surface);line-height:1.4}
+
+.player{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.play{width:52px;height:52px;border-radius:50%;border:0;background:var(--enh);color:#fff;cursor:pointer;display:grid;place-items:center;flex:none}
+.play:disabled{opacity:.4;cursor:not-allowed}
+.play svg{width:20px;height:20px;fill:currentColor}
+:root[data-theme="dark"] .play{color:#0F151A}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .play{color:#0F151A}}
+.bar{flex:1;min-width:160px;height:36px;position:relative;cursor:pointer}
+.bar canvas{width:100%;height:100%;display:block}
+.time{font-size:13px;color:var(--muted);min-width:76px;text-align:right}
+.descs{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin:4px 0 14px}
+@media (max-width:480px){.descs{grid-template-columns:1fr}}
+.desc .row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.track{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden}
+.track i{display:block;height:100%;background:var(--enh);border-radius:3px;transition:width .25s}
+@media (prefers-reduced-motion:reduce){.track i{transition:none}}
+.name{border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--surface);min-width:0;flex:1}
+.summary{margin:10px 0 0;padding-left:18px;font-size:14px}
+.summary li+li{margin-top:2px}
+.recdot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--bad);margin-right:6px;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.recdot{animation:none}}
+.status{font-size:13px;margin-top:8px;min-height:20px}
+
+/* ---------- mixer view ---------- */
+.mixer{padding:16px 24px 40px;max-width:1440px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.transport{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;position:sticky;top:0;z-index:5}
+.transport .src{font-size:13px;color:var(--muted)}
+.meters{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+@media (max-width:1100px){.meters{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.meter{padding:10px 12px;border-left:1px solid var(--line)}
+.meter:first-child{border-left:0}
+@media (max-width:1100px){.meter:nth-child(4n+1){border-left:0}.meter:nth-child(n+5){border-top:1px solid var(--line)}}
+.meter .k{font-size:12px;color:var(--muted)}
+.meter .v{font-size:19px;font-weight:600}
+.meter .u{font-size:12px;color:var(--muted);font-weight:400;margin-left:2px}
+.meter .v.on{color:var(--enh)}
+.meter .lv{height:4px;background:var(--sunk);border-radius:2px;margin-top:6px;overflow:hidden}
+.meter .lv i{display:block;height:100%;width:0;background:var(--enh)}
+.mgrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:1000px){.mgrid{grid-template-columns:1fr}}
+.chain{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:680px){.chain{grid-template-columns:1fr}}
+.mod{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.mod.off{opacity:.62}
+.mod-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.mod-head .n{font-size:12px;color:var(--muted);width:18px}
+.mod-head h3{flex:1}
+.act{font-size:12px;color:var(--muted);min-width:70px;text-align:right}
+.act.on{color:var(--enh);font-weight:600}
+.param{padding:6px 0}
+.param .row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13.5px}
+.param input[type=range]{width:100%;accent-color:var(--enh);margin:4px 0 0}
+.param input[type=number]{width:82px;border:1px solid var(--line);border-radius:6px;padding:2px 6px;background:var(--surface);text-align:right;font-size:13px}
+.param .u{font-size:12px;color:var(--muted);margin-left:4px}
+.hl{animation:hl 1.2s ease-out}
+@keyframes hl{0%{background:var(--enh-soft)}100%{background:transparent}}
+@media (prefers-reduced-motion:reduce){.hl{animation:none}}
+.switch{appearance:none;width:34px;height:20px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;flex:none;margin:0}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--surface);transition:left .15s}
+.switch:checked{background:var(--enh)}
+.switch:checked::after{left:16px}
+.side{display:flex;flex-direction:column;gap:12px}
+details.box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+details.box>summary{cursor:pointer;font-weight:600;font-size:14px}
+details.box[open]>summary{margin-bottom:10px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12px}
+td.num,th.num{text-align:right}
+tr:last-child td{border-bottom:0}
+textarea.code,pre.code{width:100%;font:12.5px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:10px;margin:0;overflow:auto;max-height:340px}
+textarea.code{min-height:180px;resize:vertical}
+.log{max-height:240px;overflow:auto;font-size:13px;display:flex;flex-direction:column;gap:3px}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:4px;background:var(--sunk);color:var(--muted);margin-right:6px}
+.tag.ai{background:var(--enh-soft);color:var(--enh)}
+.pass{color:var(--good);font-weight:600} .fail{color:var(--bad);font-weight:600}
+pre.mermaid{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;font-size:12px}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Voice Enhancer</h1>
+  <span class="chip none" id="activeChip">No active voice yet</span>
+  <div class="spacer"></div>
+  <div class="seg" role="group" aria-label="View">
+    <button data-view="simple" aria-pressed="true">Simple</button>
+    <button data-view="mixer" aria-pressed="false">Mixer</button>
+  </div>
+</header>
+
+<!-- ================= SIMPLE VIEW ================= -->
+<main id="simpleView" class="simple">
+  <section class="panel chat" aria-label="AI chat">
+    <div class="chat-head">
+      <h2>Describe your voice</h2>
+      <span class="small muted who" id="aiWho">AI: offline interpreter</span>
+    </div>
+    <div class="msgs" id="msgs" aria-live="polite">
+      <p class="empty" id="chatEmpty">Tell me how you want to sound. I will turn it into settings and update the preview so you can hear the difference.</p>
+    </div>
+    <div class="suggest" id="suggest">
+      <button>Warm, clear podcast voice</button>
+      <button>Less background noise</button>
+      <button>Keep my volume steady</button>
+      <button>Softer S sounds</button>
+    </div>
+    <form class="composer" id="composer" autocomplete="off">
+      <textarea id="prompt" rows="1" placeholder="Describe how you want your voice to sound..." aria-label="Describe how you want your voice to sound"></textarea>
+      <button class="btn dark" id="send" type="submit">Send</button>
+    </form>
+  </section>
+
+  <div class="stack">
+    <section class="panel" aria-label="Voice sample">
+      <h2>1. Your voice sample</h2>
+      <div class="btns">
+        <button class="btn primary" id="recBtn">Record</button>
+        <button class="btn" id="sampleBtn">Use sample voice</button>
+        <label class="btn" for="fileIn">Upload a recording</label>
+        <input type="file" id="fileIn" accept="audio/*" hidden>
+      </div>
+      <p class="status" id="recStatus" role="status" aria-live="polite">Record yourself reading a few sentences (about 10 seconds), or try the built-in sample.</p>
+      <ul class="summary" id="plainSummary" hidden></ul>
+    </section>
+
+    <section class="panel" aria-label="Preview">
+      <h2>2. Preview</h2>
+      <div class="player">
+        <button class="play" id="playBtn" disabled aria-label="Play preview"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4v16l13-8z"/></svg></button>
+        <div class="seg big" role="group" aria-label="Compare">
+          <button data-ab="original" aria-pressed="false">Original</button>
+          <button data-ab="enhanced" aria-pressed="true">Enhanced</button>
+        </div>
+        <div class="bar" id="bar" aria-label="Playback position"><canvas id="barCv"></canvas></div>
+        <span class="time" id="time">0.0 / 0.0 s</span>
+      </div>
+      <p class="status small muted" id="previewStatus">No sample yet.</p>
+    </section>
+
+    <section class="panel" aria-label="Voice profile">
+      <h2>3. Voice profile</h2>
+      <div class="descs" id="descs"></div>
+      <div class="btns">
+        <input class="name" id="profName" value="My voice" aria-label="Profile name" maxlength="40">
+        <button class="btn primary" id="useBtn">Use voice</button>
+      </div>
+      <p class="status small" id="useStatus" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="panel" aria-label="Live microphone">
+      <h2>4. Live microphone</h2>
+      <p class="small muted" id="liveNote">Runs your active voice profile on the microphone in real time. Wear headphones to avoid feedback.</p>
+      <div class="btns" style="margin-top:10px">
+        <button class="btn" id="liveBtn">Start live voice</button>
+        <div class="seg" role="group" aria-label="Live monitor">
+          <button data-live="original" aria-pressed="false">Original</button>
+          <button data-live="enhanced" aria-pressed="true">Enhanced</button>
+        </div>
+        <label class="small muted" for="liveVol">Volume</label>
+        <input type="range" id="liveVol" min="0" max="100" value="0" style="width:110px;accent-color:var(--enh)">
+      </div>
+      <p class="status small" id="liveStatus" role="status" aria-live="polite"></p>
+    </section>
+  </div>
+</main>
+
+<!-- ================= MIXER VIEW ================= -->
+<main id="mixerView" class="mixer" hidden>
+  <div class="transport">
+    <button class="btn" id="mxBack">Back to simple view</button>
+    <button class="btn" id="mxPlay" disabled>Play preview</button>
+    <button class="btn" id="mxLive">Start live</button>
+    <label class="btns small"><input type="checkbox" class="switch" id="bypass"> Bypass all processing</label>
+    <label class="small" for="engineSel">Engine</label>
+    <select id="engineSel" style="border:1px solid var(--line);border-radius:6px;background:var(--surface);padding:5px 8px"><option value="browser">Browser</option><option value="server">Server</option></select>
+    <span class="small muted" id="engineNote"></span>
+    <span class="src" id="mxSrc">Meters idle</span>
+    <div style="flex:1"></div>
+    <button class="btn primary" id="mxUse">Use voice</button>
+  </div>
+
+  <section class="meters" aria-label="Meters">
+    <div class="meter"><div class="k">Input peak</div><div class="v"><span id="mInPk">–</span><span class="u">dBFS</span></div><div class="lv"><i id="mInBar"></i></div></div>
+    <div class="meter"><div class="k">Output peak</div><div class="v"><span id="mOutPk">–</span><span class="u">dBFS</span></div><div class="lv"><i id="mOutBar"></i></div></div>
+    <div class="meter"><div class="k">Output loudness</div><div class="v"><span id="mLufs">–</span><span class="u">LUFS</span></div></div>
+    <div class="meter"><div class="k">Speech detected</div><div class="v" id="mVad">–</div></div>
+    <div class="meter"><div class="k">Noise removed</div><div class="v"><span id="mNs">–</span><span class="u">dB</span></div></div>
+    <div class="meter"><div class="k">De-esser</div><div class="v"><span id="mDe">–</span><span class="u">dB</span></div></div>
+    <div class="meter"><div class="k">Compressor</div><div class="v"><span id="mComp">–</span><span class="u">dB</span></div></div>
+    <div class="meter"><div class="k">Limiter</div><div class="v"><span id="mLim">–</span><span class="u">dB</span></div></div>
+  </section>
+
+  <div class="mgrid">
+    <section class="chain" id="chain" aria-label="Processing chain"></section>
+    <aside class="side">
+      <details class="box" open>
+        <summary>Voice analysis vs reference</summary>
+        <div class="tablewrap"><table id="anaTable"><tbody><tr><td class="muted">Record or load a sample to analyse it.</td></tr></tbody></table></div>
+        <div class="btns" style="margin-top:10px"><button class="btn sm" id="matchBtn" disabled>Match my voice to the reference</button></div>
+      </details>
+      <details class="box">
+        <summary>Reference target</summary>
+        <p class="small warn" id="refNote">The requirements left the measured reference values as a placeholder, so these are built-in podcast defaults. Paste the team’s measured values here.</p>
+        <textarea class="code" id="refText" spellcheck="false" aria-label="Reference target JSON"></textarea>
+        <div class="btns" style="margin-top:8px"><button class="btn sm dark" id="refApply">Apply reference</button><button class="btn sm" id="refReset">Restore defaults</button><span class="small" id="refMsg"></span></div>
+      </details>
+      <details class="box" open>
+        <summary>Voice profile (shared by AI and Mixer)</summary>
+        <pre class="code" id="profJson"></pre>
+        <div class="btns" style="margin-top:8px"><button class="btn sm" id="copyJson">Copy JSON</button><button class="btn sm" id="saveJson" hidden>Save .json</button><button class="btn sm" id="resetProf">Reset to neutral</button><span class="small" id="jsonMsg"></span></div>
+      </details>
+      <details class="box" open>
+        <summary>Change history</summary>
+        <div class="log" id="log"><span class="muted">No changes yet.</span></div>
+      </details>
+      <details class="box">
+        <summary>Self-test</summary>
+        <div class="btns"><button class="btn sm dark" id="runTests">Run self-test</button><span class="small" id="testMsg"></span></div>
+        <div class="tablewrap" style="margin-top:8px"><table id="testTable"><thead><tr><th>Result</th><th>Check</th><th>Req.</th><th>Measured</th></tr></thead><tbody></tbody></table></div>
+      </details>
+      <details class="box">
+        <summary>Performance</summary>
+        <div class="tablewrap"><table><tbody id="perfBody"><tr><td class="muted">Start live voice to measure.</td></tr></tbody></table></div>
+        <div class="btns" style="margin-top:8px"><label class="small" for="chunkSel">Live chunk size</label>
+          <select id="chunkSel" style="border:1px solid var(--line);border-radius:6px;background:var(--surface);padding:3px 6px"><option>256</option><option>512</option><option selected>1024</option><option>2048</option></select></div>
+      </details>
+      <details class="box">
+        <summary>Architecture</summary>
+<pre class="mermaid">
+flowchart TB
+  subgraph FE[Frontend]
+    CHAT[AI chat] --- PREV[Preview A/B] --- MIX[Mixer] --- USE[Use voice]
+  end
+  CHAT --> GEN[Voice Profile Generator: Claude or offline interpreter]
+  ANA[Voice analysis] --> GEN
+  REF[Reference target] --> GEN
+  GEN -->|validated changes| STORE[(Voice Profile store: single source of truth)]
+  MIX -->|edits| STORE
+  STORE --> ENG[Browser engine: dsp.js]
+  STORE -->|REST + WebSocket| SRV[voice_engine server]
+  SRV --> CPU[CPU backend: numpy/numba, sample-matched to dsp.js]
+  SRV --> ROCM[ROCm backend: torch on AMD GPU]
+  ENG --> OUT[Headphones]
+  SRV --> OUT
+  ROCM -.next.-> NEXT[Learned denoiser, Silero VAD, whisper.cpp, virtual microphone]
+</pre>
+        <p class="small muted" style="margin-top:8px">Not available in this browser build: virtual microphone output (a web page cannot create an audio device), formant measurement, and learned models such as Silero VAD or a neural denoiser. Their slots in the chain are in place for the ROCm backend.</p>
+      </details>
+    </aside>
+  </div>
+</main>
+
+<script src="src/schema.generated.js"></script>
+<script src="src/profile.js"></script>
+<script src="src/dsp.js"></script>
+<script src="src/analysis.js"></script>
+<script src="src/ai.js"></script>
+<script src="src/selftest.js"></script>
+<script src="src/server-client.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>

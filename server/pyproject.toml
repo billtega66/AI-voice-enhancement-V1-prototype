@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voice-engine"
+version = "0.1.0"
+description = "Real-time AI voice enhancement engine (browser parity, CPU and AMD ROCm backends)"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.26",
+  "scipy>=1.11",
+  "numba>=0.59",
+  "soundfile>=0.12",
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+  "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+llm = ["anthropic>=0.40"]
+dev = ["pytest>=8", "httpx>=0.27", "playwright>=1.44"]
+# ROCm PyTorch is installed from AMD's wheel index, not PyPI: see docs/ROCM.md
+
+[project.scripts]
+voice-engine = "voice_engine.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["voice_engine*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

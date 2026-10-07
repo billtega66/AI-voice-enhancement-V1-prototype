@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+dist/
+node_modules/
+*.wav
+*.f32
+rocm_benchmark.csv
+rocm_environment.json
+.env
+build/

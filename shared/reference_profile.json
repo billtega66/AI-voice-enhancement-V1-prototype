@@ -1,0 +1,10 @@
+{
+  "source": "Built-in podcast defaults (replace with the team’s measured reference values)",
+  "integratedLufs": -16,
+  "truePeakDb": -1,
+  "lowMidRelDb": -6,
+  "presenceRelDb": -14,
+  "sibilanceRelDb": -24,
+  "loudnessRangeLu": 6,
+  "noiseFloorDb": -60
+}

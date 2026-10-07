@@ -1,0 +1,15 @@
+# AMD ROCm image. Pick the rocm/pytorch tag that matches the ROCm version on the host
+# (https://hub.docker.com/r/rocm/pytorch/tags) and record it in the report.
+ARG ROCM_PYTORCH_TAG=latest
+FROM rocm/pytorch:${ROCM_PYTORCH_TAG}
+RUN apt-get update && apt-get install -y --no-install-recommends libsndfile1 && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY . .
+# torch comes from the base image (ROCm build); do not let pip replace it
+ENV VOICE_SHARED_DIR=/app/shared VOICE_WEB_DIR=/app/web
+RUN pip install --no-cache-dir ./server && python scripts/gen_schema.py
+ENV VOICE_BACKEND=rocm
+EXPOSE 8000
+CMD ["voice-engine", "serve", "--host", "0.0.0.0", "--port", "8000"]
+# docker build -f docker/Dockerfile.rocm -t voice-engine:rocm .
+# docker run --device=/dev/kfd --device=/dev/dri --group-add video -p 8000:8000 voice-engine:rocm

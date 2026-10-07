@@ -1,0 +1,9 @@
+FROM python:3.12-slim
+RUN apt-get update && apt-get install -y --no-install-recommends libsndfile1 && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY . .
+ENV VOICE_SHARED_DIR=/app/shared VOICE_WEB_DIR=/app/web
+RUN pip install --no-cache-dir ./server && python scripts/gen_schema.py
+ENV VOICE_BACKEND=cpu
+EXPOSE 8000
+CMD ["voice-engine", "serve", "--host", "0.0.0.0", "--port", "8000"]
