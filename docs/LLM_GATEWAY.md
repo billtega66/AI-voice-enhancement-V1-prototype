@@ -11,6 +11,24 @@ browser ──POST /api/interpret──► voice-engine ──POST {LLM_BASE_URL
                                      └─ any failure ──► offline interpreter + a visible note; settings stay valid
 ```
 
+## OpenAI API (local Mac / CPU setup)
+
+Create an API key at https://platform.openai.com/api-keys. Activate the project virtual environment with `source .venv/bin/activate`, copy `.env.example` to `.env` if you do not already have one, and use:
+
+```dotenv
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=gpt-4.1-mini
+LLM_API_KEY=your-api-key-here
+LLM_THINKING_PARAM=none
+VOICE_BACKEND=cpu
+```
+
+`gpt-4.1-mini` supports the gateway's Chat Completions and JSON mode request format. Set `LLM_THINKING_PARAM=none` so provider-specific reasoning fields are omitted. This app reads `LLM_API_KEY`, rather than `OPENAI_API_KEY`. Keep your real key in the ignored `.env` file on the server.
+
+Run `make serve`, then open http://127.0.0.1:8000 in Chrome or Edge. Restart after editing `.env`. With a blank key, the app runs with the offline interpreter; with a key, `/api/health` should report `interpreter: "gateway"` and `model: "gpt-4.1-mini"`. The API converts text requests into voice settings; audio enhancement runs locally on the CPU or in the browser.
+
+On macOS, use Python 3.12 for a predictable scientific Python environment. SoundFile's macOS wheels normally bundle libsndfile, so the Linux `apt` command in the quick start is unnecessary. ROCm requires supported AMD hardware and is not the Mac backend.
+
 ## Option A: DeepSeek on Alibaba Bailian (same model as the reference project)
 
 ```bash

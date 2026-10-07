@@ -38,7 +38,7 @@ make serve            # http://127.0.0.1:8000
 
 Open the address in Chrome or Edge and use headphones for live monitoring. Without the server, `make web` produces `dist/voice-enhancer.html`, which runs on its own from any static host or from disk.
 
-### AI gateway (DeepSeek on Bailian, or vLLM on the AMD GPU)
+### AI gateway (OpenAI, DeepSeek on Bailian, or vLLM on the AMD GPU)
 
 The AI runs through any OpenAI-compatible `/chat/completions` endpoint, configured in `.env` (see [docs/LLM_GATEWAY.md](docs/LLM_GATEWAY.md)):
 
@@ -48,6 +48,7 @@ make serve               # reads .env automatically; the key never reaches the b
 python scripts/check_llm.py   # optional live check (6 paid calls)
 ```
 
+- For OpenAI on a local Mac, see [the OpenAI setup](docs/LLM_GATEWAY.md#openai-api-local-mac--cpu-setup): use `https://api.openai.com/v1`, `gpt-4.1-mini`, and `LLM_THINKING_PARAM=none`.
 - `LLM_MODEL=bailian/deepseek-v4.1-flash` uses the same model as the reference project.
 - Pointing `LLM_BASE_URL` at `vllm serve` on ROCm keeps the language model on the AMD GPU.
 - Without a gateway, the server uses Claude if `ANTHROPIC_API_KEY` is set, and otherwise the offline keyword interpreter. The UI shows which one is active.

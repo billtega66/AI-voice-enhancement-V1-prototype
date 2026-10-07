@@ -52,7 +52,7 @@
 
   /** Observable store. Every edit (AI, Mixer, reset, load) goes through set(). */
   class ProfileStore {
-    constructor(params) { this.params = { ...DEFAULTS, ...(params || {}) }; this.listeners = []; this.log = []; this.version = 0; }
+    constructor(params) { this.params = { ...DEFAULTS, ...validateChanges(params || {}).ok }; this.listeners = []; this.log = []; this.version = 0; }
     get() { return { ...this.params }; }
     on(fn) { this.listeners.push(fn); }
     set(changes, source) {

@@ -62,6 +62,19 @@ def test_request_shape_vllm(monkeypatch):
     assert body["chat_template_kwargs"] == {"enable_thinking": False} and "enable_thinking" not in body
 
 
+def test_request_shape_openai(monkeypatch):
+    monkeypatch.setenv("LLM_BASE_URL", "https://api.openai.com/v1")
+    monkeypatch.setenv("LLM_MODEL", "gpt-4.1-mini")
+    monkeypatch.setenv("LLM_THINKING_PARAM", "none")
+    seen = []
+    interp(reply('{"reply":"Warmer.","changes":{"warmthDb":2}}', seen=seen)).interpret("make it warmer", ctx())
+    body = json.loads(seen[0].content)
+    assert str(seen[0].url) == "https://api.openai.com/v1/chat/completions"
+    assert body["model"] == "gpt-4.1-mini"
+    assert body["response_format"] == {"type": "json_object"}
+    assert "enable_thinking" not in body and "chat_template_kwargs" not in body
+
+
 @pytest.mark.parametrize("content,finish,status,msg", [
     ('{"reply":"x","changes":{}}', "length", 200, "incomplete"),
     ('{"reply":"x","changes":{}}', "stop", 500, "HTTP 500"),
