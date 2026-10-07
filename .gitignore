@@ -12,3 +12,4 @@ rocm_benchmark.csv
 rocm_environment.json
 .env
 build/
+data/

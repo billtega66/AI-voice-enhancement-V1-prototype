@@ -22,14 +22,16 @@ import time
 from pathlib import Path
 
 import numpy as np
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+import secrets
+
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import __version__
-from .ai import OfflineInterpreter, get_interpreter
+from .ai import ModelUnavailable, OfflineInterpreter, get_interpreter
 from .analysis import analyze_voice
 from .audio_io import read_audio, wav_bytes
 from .backends import available_backends, get_backend
@@ -107,7 +109,7 @@ def create_app(backend_name: str | None = None, interpreter=None) -> FastAPI:
     def health():
         ok, detail = backend.available()
         return {"ok": True, "version": __version__, "backend": {"name": backend.name, "detail": detail},
-                "backends": available_backends(), "interpreter": interp.name, "schemaKeys": len(SCHEMA)}
+                "backends": available_backends(), "interpreter": interp.name, "model": getattr(interp, "model", None), "schemaKeys": len(SCHEMA)}
 
     @app.get("/api/schema")
     def schema():
@@ -141,16 +143,26 @@ def create_app(backend_name: str | None = None, interpreter=None) -> FastAPI:
         }))
 
     @app.post("/api/interpret")
-    async def interpret(body: InterpretBody):
-        ctx = {"profile": full_profile(body.profile), "analysis": body.analysis, "reference": body.reference or DEFAULT_REFERENCE, "history": body.history}
+    async def interpret(body: InterpretBody, request: Request):
+        # Anonymous guest id (cookie) so rate limits apply per browser, as well as one global daily budget.
+        owner = request.cookies.get("voice_guest") or secrets.token_urlsafe(12)
+        ctx = {"profile": full_profile(body.profile), "analysis": body.analysis, "reference": body.reference or DEFAULT_REFERENCE,
+               "history": body.history, "owner": owner}
         note, used = None, interp
         try:
             res = await asyncio.to_thread(interp.interpret, body.text, ctx)
-        except Exception as e:  # noqa: BLE001 - LLM outage must not break the app
+        except ModelUnavailable as e:  # expected failures: message is safe to show
+            used, note = OfflineInterpreter(), f"{e} The offline interpreter handled this."
+            res = used.interpret(body.text, ctx)
+        except Exception as e:  # noqa: BLE001 - an LLM outage must not break the app
             log.warning("interpreter %s failed: %s", interp.name, e)
             used, note = OfflineInterpreter(), f"{interp.name} failed ({e.__class__.__name__}); the offline interpreter handled this."
             res = used.interpret(body.text, ctx)
-        return {"reply": res.get("reply"), "changes": res.get("changes", {}), "rejected": res.get("rejected", []), "interpreter": used.name, "note": note}
+        resp = JSONResponse({"reply": res.get("reply"), "changes": res.get("changes", {}), "rejected": res.get("rejected", []),
+                             "interpreter": used.name, "model": getattr(used, "model", None), "note": note})
+        if "voice_guest" not in request.cookies:
+            resp.set_cookie("voice_guest", owner, max_age=365 * 86400, httponly=True, samesite="lax")
+        return resp
 
     @app.get("/api/benchmark")
     async def bench(chunks: str = "256,512,1024,2048", seconds: float = 6.0):

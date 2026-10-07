@@ -3,9 +3,10 @@
 | Suite | Command | Count | What it proves |
 | --- | --- | --- | --- |
 | Browser self-test | `node tests/js/run_selftest.js` (also in the app: Mixer → Self-test) | 21 | Each browser DSP stage, analysis, interpreter and validation against known signals |
-| Server tests | `cd server && pytest` | 63 | Server stages, API, WebSocket, CLI, backends, Claude interpreter (mocked client) |
+| Server tests | `cd server && pytest` | 84 | Server stages, API, WebSocket, CLI, backends, AI gateway (request shape, validation, budget, fallback), Claude interpreter (mocked) |
 | Parity | part of the server tests | 19 | Browser and server engines give the same audio (≤ 1e-5), speech decisions, schema, validation, interpreter output, reference matching and analysis |
-| End-to-end | `pytest tests/e2e` | 4 | Real Chromium with a fake microphone, standalone and served |
+| End-to-end | `pytest tests/e2e` | 5 | Real Chromium with a fake microphone: standalone, served, and served through a stand-in OpenAI-compatible gateway over HTTP |
+| Live LLM | `python scripts/check_llm.py` | 6 | Opt-in, paid: the configured gateway answers validly and moves the right parameters |
 
 ## Mapping to the functional requirements (section 14)
 
@@ -32,5 +33,5 @@
 ## Not covered here
 
 - ROCm execution: no AMD GPU in CI. `test_torch_ops_contract_matches_numpy` checks the GPU code path's calls with a stand-in tensor library; `scripts/verify_rocm.py` must be run on the AMD machine.
-- Quality of real Claude responses: the interpreter is tested with mocked model replies. Judge real responses with the user study.
+- Quality of real model responses (DeepSeek, vLLM models, Claude): CI uses mocked and stand-in replies. Use `scripts/check_llm.py` and the user study.
 - Perceptual quality: tests check signal properties, not how natural the result sounds. That belongs in the 5–8 person user study.

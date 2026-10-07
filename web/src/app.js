@@ -335,7 +335,7 @@
     },
     renderWho() {
       const n = S.interpreter.name;
-      $('#aiWho').textContent = n === 'claude' ? 'AI: Claude' : n === 'server' ? 'AI: voice server (' + (S.server ? S.server.interpreter : '?') + ')' : 'AI: offline interpreter (keyword rules)';
+      $('#aiWho').textContent = n === 'claude' ? 'AI: Claude' : n === 'server' ? 'AI: voice server (' + (S.server ? S.server.interpreter + (S.server.model ? ': ' + S.server.model : '') : '?') + ')' : 'AI: offline interpreter (keyword rules)';
     },
     renderEngine() {
       const sel = $('#engineSel'); if (!sel) return;

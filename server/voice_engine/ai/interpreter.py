@@ -215,7 +215,11 @@ class ClaudeInterpreter:
 
 
 def get_interpreter():
-    """Claude when ANTHROPIC_API_KEY is set (and the SDK is installed), otherwise the offline rules."""
+    """Selection order: OpenAI-compatible gateway (LLM_BASE_URL/LLM_MODEL/LLM_API_KEY: Bailian DeepSeek,
+    vLLM on ROCm, ...), then Claude (ANTHROPIC_API_KEY), then the offline rules."""
+    from .gateway import GatewayInterpreter, gateway_configured
+    if gateway_configured():
+        return GatewayInterpreter()
     if os.environ.get("ANTHROPIC_API_KEY"):
         try:
             return ClaudeInterpreter()

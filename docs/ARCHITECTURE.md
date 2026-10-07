@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Interface | `web/index.html`, `web/src/app.js` (Simple view, Mixer view) | static hosting of `web/` |
 | Voice Profile | `web/src/profile.js` (`ProfileStore`) | `voice_engine/profile.py` |
-| AI generator | `web/src/ai.js` (Claude via the artifact runtime, or offline rules) | `voice_engine/ai/interpreter.py` (Claude API, or offline rules) |
+| AI generator | `web/src/ai.js` (Claude via the artifact runtime, or offline rules) | `voice_engine/ai/gateway.py` (OpenAI-compatible gateway: Bailian DeepSeek, vLLM on ROCm), `interpreter.py` (Claude, offline rules) |
 | Voice analysis | `web/src/analysis.js` | `voice_engine/analysis.py` |
 | Audio engine | `web/src/dsp.js` | `voice_engine/dsp/engine.py` |
 | Compute backend | JavaScript on the main thread | `backends/cpu.py` (numpy/numba), `backends/rocm.py` (PyTorch on AMD GPU) |

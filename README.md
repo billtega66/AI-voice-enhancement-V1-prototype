@@ -38,15 +38,21 @@ make serve            # http://127.0.0.1:8000
 
 Open the address in Chrome or Edge and use headphones for live monitoring. Without the server, `make web` produces `dist/voice-enhancer.html`, which runs on its own from any static host or from disk.
 
-### Optional: Claude as the AI interpreter
+### AI gateway (DeepSeek on Bailian, or vLLM on the AMD GPU)
+
+The AI runs through any OpenAI-compatible `/chat/completions` endpoint, configured in `.env` (see [docs/LLM_GATEWAY.md](docs/LLM_GATEWAY.md)):
 
 ```bash
-export ANTHROPIC_API_KEY=...                         # server-side only, never sent to the browser
-export VOICE_LLM_MODEL=claude-haiku-4-5-20251001     # optional override
-make serve
+cp .env.example .env     # set LLM_BASE_URL, LLM_MODEL, LLM_API_KEY
+make serve               # reads .env automatically; the key never reaches the browser
+python scripts/check_llm.py   # optional live check (6 paid calls)
 ```
 
-Without a key the server uses the offline keyword interpreter, and the UI labels which one is active. Every AI response is validated and clamped against the schema before it reaches the engine.
+- `LLM_MODEL=bailian/deepseek-v4.1-flash` uses the same model as the reference project.
+- Pointing `LLM_BASE_URL` at `vllm serve` on ROCm keeps the language model on the AMD GPU.
+- Without a gateway, the server uses Claude if `ANTHROPIC_API_KEY` is set, and otherwise the offline keyword interpreter. The UI shows which one is active.
+
+Every AI answer passes structural and semantic validation before it reaches the engine. A rejected answer, a timeout or an exhausted budget falls back to the offline interpreter, with a note in the chat.
 
 ### AMD ROCm
 
@@ -73,8 +79,8 @@ voice-engine backends
 ```bash
 make test        # all of the below
 make test-js     # browser engine self-test in Node (21 checks)
-make test-py     # server stages, API, WebSocket, CLI, and browser/server parity (63 tests)
-make test-e2e    # Chromium with a fake microphone: standalone build and served mode (4 scenarios)
+make test-py     # server stages, API, WebSocket, CLI, AI gateway, and browser/server parity (84 tests)
+make test-e2e    # Chromium with a fake microphone: standalone, served, and served with an LLM gateway (5 scenarios)
 ```
 
 The parity tests render the same input through `web/src/dsp.js` and `server/voice_engine` and require the outputs to match within 1e-5, so a profile sounds the same whichever engine runs it. See [docs/TESTING.md](docs/TESTING.md) for what each suite covers and how it maps to the functional requirements.

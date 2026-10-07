@@ -1,0 +1,35 @@
+# Voice engine + local LLM on one AMD GPU machine.
+#   docker compose -f docker/compose.rocm.yaml up -d --build
+# Check the model fits in GPU memory together with anything else you run, and pin image
+# tags to the versions you test (record them in the report).
+services:
+  vllm:
+    image: rocm/vllm:latest
+    command: ["vllm", "serve", "${LLM_MODEL:-Qwen/Qwen3-8B}", "--host", "0.0.0.0", "--port", "8001",
+              "--max-model-len", "8192", "--gpu-memory-utilization", "0.6"]
+    devices: ["/dev/kfd", "/dev/dri"]
+    group_add: ["video"]
+    ipc: host
+    shm_size: 8g
+    volumes: ["hf-cache:/root/.cache/huggingface"]
+    environment: ["HF_TOKEN=${HF_TOKEN:-}"]
+    ports: ["127.0.0.1:8001:8001"]
+
+  voice-engine:
+    build: { context: .., dockerfile: docker/Dockerfile.rocm }
+    depends_on: [vllm]
+    devices: ["/dev/kfd", "/dev/dri"]
+    group_add: ["video"]
+    environment:
+      LLM_BASE_URL: http://vllm:8001/v1
+      LLM_MODEL: ${LLM_MODEL:-Qwen/Qwen3-8B}
+      LLM_API_KEY: EMPTY
+      LLM_THINKING_PARAM: chat_template_kwargs
+      VOICE_BACKEND: rocm
+      VOICE_DB_PATH: /data/voice.sqlite
+    volumes: ["voice-data:/data"]
+    ports: ["127.0.0.1:8000:8000"]
+
+volumes:
+  hf-cache:
+  voice-data:
