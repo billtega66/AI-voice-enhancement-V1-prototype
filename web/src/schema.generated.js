@@ -419,7 +419,7 @@ window.VOICE_SCHEMA_DOC = {
   ]
 };
 window.VOICE_REFERENCE = {
-  "source": "Built-in podcast defaults (replace with the team\u00e2\u20ac\u2122s measured reference values)",
+  "source": "Built-in podcast defaults (replace with the team\u2019s measured reference values)",
   "integratedLufs": -16,
   "truePeakDb": -1,
   "lowMidRelDb": -6,

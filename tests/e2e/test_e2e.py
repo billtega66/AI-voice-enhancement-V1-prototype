@@ -151,6 +151,7 @@ def test_served_uses_server_backend(page_factory, server_url):
     pg.wait_for_function("document.querySelector('#previewStatus').textContent.includes('on the server (cpu)')", timeout=20000)
     # AI through the server interpreter
     send(pg, "My voice sounds thin and inconsistent. Make it warmer and keep the volume consistent.")
+    apply_suggested(pg)
     p = ev(pg, "window.__ve.store.get()")
     assert p["warmthDb"] > 0 and p["compRatio"] > 2.5
     pg.wait_for_function("document.querySelector('#previewStatus').textContent.includes('on the server')", timeout=20000)
