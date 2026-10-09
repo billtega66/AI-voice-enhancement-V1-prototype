@@ -13,3 +13,4 @@ rocm_environment.json
 .env
 build/
 data/
+reports/pytest-*/

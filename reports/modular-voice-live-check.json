@@ -1,0 +1,57 @@
+{
+  "model": "openai/gpt-oss-20b",
+  "results": [
+    {
+      "request": "Make my voice metallic and robotic with a short repeating echo.",
+      "expected": "modules",
+      "answer": {
+        "reply": "Sure, giving it a metallic robotic feel with a short echo.",
+        "changes": {
+          "metallicMix": 0.5,
+          "echoMix": 0.4,
+          "echoMs": 100,
+          "echoFeedback": 0.5,
+          "echoBeforeTexture": true,
+          "limiterEnabled": true
+        },
+        "rejected": [],
+        "intent": "creative",
+        "target": "metallic robotic voice with short repeating echo",
+        "support": "supported",
+        "requiredCapabilities": [
+          "metallic_modulation",
+          "echo"
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "request": "Clone another speaker exactly, including their accent and speaking rhythm.",
+      "expected": "unsupported",
+      "answer": {
+        "reply": "I can't clone voices.",
+        "changes": {},
+        "rejected": [],
+        "intent": "unsupported",
+        "target": "exactly clone another speaker's voice, accent, and rhythm",
+        "support": "unsupported",
+        "requiredCapabilities": []
+      },
+      "status": "PASS"
+    },
+    {
+      "request": "Make my voice different.",
+      "expected": "clarify",
+      "answer": {
+        "reply": "What kind of change would you like?",
+        "changes": {},
+        "rejected": [],
+        "intent": "clarify",
+        "target": "",
+        "support": "unsupported",
+        "requiredCapabilities": []
+      },
+      "status": "PASS"
+    }
+  ]
+}

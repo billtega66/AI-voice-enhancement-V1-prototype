@@ -1,0 +1,310 @@
+{
+  "model": "openai/gpt-oss-20b",
+  "endpoint": "https://api.groq.com/openai/v1",
+  "started_at_utc": "2026-10-09T19:19:26Z",
+  "results": [
+    {
+      "id": 1,
+      "mode": "enhancement",
+      "request": "Make my voice warmer.",
+      "expectation": "up",
+      "status": "PASS",
+      "http_status": 200,
+      "usage": {
+        "queue_time": 0.058637915,
+        "prompt_tokens": 3133,
+        "prompt_time": 0.195669999,
+        "completion_tokens": 167,
+        "completion_time": 0.195500881,
+        "total_tokens": 3300,
+        "total_time": 0.39117088,
+        "completion_tokens_details": {
+          "reasoning_tokens": 135
+        }
+      },
+      "raw_answer": "{\"intent\":\"enhancement\",\"reply\":\"Sure, adding warmth.\",\"changes\":{\"warmthDb\":2.5}}",
+      "answer": {
+        "reply": "Sure, adding warmth.",
+        "changes": {
+          "warmthDb": 2.5
+        },
+        "rejected": [],
+        "intent": "enhancement"
+      },
+      "seconds": 1.19
+    },
+    {
+      "id": 2,
+      "mode": "enhancement",
+      "request": "Reduce the sharp S sounds.",
+      "expectation": "down",
+      "status": "PASS",
+      "http_status": 200,
+      "usage": {
+        "queue_time": 0.058202572,
+        "prompt_tokens": 3134,
+        "prompt_time": 0.185695211,
+        "completion_tokens": 419,
+        "completion_time": 0.485950655,
+        "total_tokens": 3553,
+        "total_time": 0.671645866,
+        "completion_tokens_details": {
+          "reasoning_tokens": 376
+        }
+      },
+      "raw_answer": "{\"intent\":\"enhancement\",\"reply\":\"Sure, I'll reduce the sharp S sounds.\",\"changes\":{\"deEssThresholdDb\":-40,\"deEssMaxDb\":8}}",
+      "answer": {
+        "reply": "Sure, I'll reduce the sharp S sounds.",
+        "changes": {
+          "deEssThresholdDb": -40,
+          "deEssMaxDb": 8.0
+        },
+        "rejected": [],
+        "intent": "enhancement"
+      },
+      "seconds": 1.57
+    },
+    {
+      "id": 3,
+      "mode": "enhancement",
+      "request": "Remove keyboard noise while keeping my speech clear.",
+      "expectation": "up",
+      "status": "PASS",
+      "http_status": 200,
+      "usage": {
+        "queue_time": 0.021569949,
+        "prompt_tokens": 3137,
+        "prompt_time": 0.188406085,
+        "completion_tokens": 209,
+        "completion_time": 0.256311381,
+        "total_tokens": 3346,
+        "total_time": 0.444717466,
+        "completion_tokens_details": {
+          "reasoning_tokens": 176
+        }
+      },
+      "raw_answer": "{\"intent\":\"enhancement\",\"reply\":\"Sure, I'll reduce keyboard noise.\",\"changes\":{\"nsAmount\":0.8}}",
+      "answer": {
+        "reply": "Sure, I'll reduce keyboard noise.",
+        "changes": {
+          "nsAmount": 0.8
+        },
+        "rejected": [],
+        "intent": "enhancement"
+      },
+      "seconds": 1.2
+    },
+    {
+      "id": 4,
+      "mode": "enhancement",
+      "request": "Keep my volume steady without changing my pitch.",
+      "expectation": "up",
+      "status": "PASS",
+      "http_status": 200,
+      "usage": {
+        "queue_time": 0.057706002,
+        "prompt_tokens": 3137,
+        "prompt_time": 0.197145691,
+        "completion_tokens": 367,
+        "completion_time": 0.398830693,
+        "total_tokens": 3504,
+        "total_time": 0.595976384,
+        "completion_tokens_details": {
+          "reasoning_tokens": 332
+        }
+      },
+      "raw_answer": "{\"intent\":\"enhancement\",\"reply\":\"Sure, I've tightened the compression a bit.\",\"changes\":{\"compRatio\":3.0}}",
+      "answer": {
+        "reply": "Sure, I've tightened the compression a bit.",
+        "changes": {
+          "compRatio": 3.0
+        },
+        "rejected": [],
+        "intent": "enhancement"
+      },
+      "seconds": 1.78
+    },
+    {
+      "id": 5,
+      "mode": "enhancement",
+      "request": "Make it less bright, but keep the warmth.",
+      "expectation": "down",
+      "status": "PASS",
+      "http_status": 200,
+      "usage": {
+        "queue_time": 0.046382822,
+        "prompt_tokens": 3138,
+        "prompt_time": 0.186127057,
+        "completion_tokens": 244,
+        "completion_time": 0.258638546,
+        "total_tokens": 3382,
+        "total_time": 0.444765603,
+        "completion_tokens_details": {
+          "reasoning_tokens": 209
+        }
+      },
+      "raw_answer": "{\"intent\":\"enhancement\",\"reply\":\"Sure, I'll reduce the high frequencies a bit.\",\"changes\":{\"airDb\":-1}}",
+      "answer": {
+        "reply": "Sure, I'll reduce the high frequencies a bit.",
+        "changes": {
+          "airDb": -1.0
+        },
+        "rejected": [],
+        "intent": "enhancement"
+      },
+      "seconds": 1.23
+    },
+    {
+      "id": 6,
+      "mode": "enhancement",
+      "request": "Make my voice slightly deeper.",
+      "expectation": "down",
+      "status": "FAIL",
+      "http_status": 200,
+      "usage": {
+        "queue_time": 0.178414776,
+        "prompt_tokens": 3134,
+        "prompt_time": 0.068187765,
+        "completion_tokens": 384,
+        "completion_time": 0.498866403,
+        "total_tokens": 3518,
+        "total_time": 0.567054168,
+        "prompt_tokens_details": {
+          "cached_tokens": 2304
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 346
+        }
+      },
+      "raw_answer": "{\"intent\":\"enhancement\",\"reply\":\"Sure, I'll add a bit of warmth to deepen your voice.\",\"changes\":{\"warmthDb\":1}}",
+      "answer": {
+        "reply": "Sure, I'll add a bit of warmth to deepen your voice.",
+        "changes": {
+          "warmthDb": 1.0
+        },
+        "rejected": [],
+        "intent": "enhancement"
+      },
+      "seconds": 1.5
+    },
+    {
+      "id": 7,
+      "mode": "creative",
+      "request": "I want my voice to sound like chipmunks.",
+      "expectation": "up",
+      "status": "PASS",
+      "http_status": 200,
+      "usage": {
+        "queue_time": 0.129727463,
+        "prompt_tokens": 3139,
+        "prompt_time": 1.151793652,
+        "completion_tokens": 338,
+        "completion_time": 0.366196574,
+        "total_tokens": 3477,
+        "total_time": 1.517990226,
+        "prompt_tokens_details": {
+          "cached_tokens": 256
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 301
+        }
+      },
+      "raw_answer": "{\"intent\":\"creative\",\"reply\":\"Sure, your voice will sound like a chipmunk.\",\"changes\":{\"pitchSemitones\":3}}",
+      "answer": {
+        "reply": "Sure, your voice will sound like a chipmunk.",
+        "changes": {
+          "pitchSemitones": 3.0
+        },
+        "rejected": [],
+        "intent": "creative"
+      },
+      "seconds": 2.39
+    },
+    {
+      "id": 8,
+      "mode": "enhancement",
+      "request": "I want my voice to sound like chipmunks.",
+      "expectation": "no_changes",
+      "status": "PASS",
+      "http_status": 200,
+      "usage": {
+        "queue_time": 0.172451199,
+        "prompt_tokens": 3139,
+        "prompt_time": 0.17449088,
+        "completion_tokens": 581,
+        "completion_time": 0.631415489,
+        "total_tokens": 3720,
+        "total_time": 0.805906369,
+        "completion_tokens_details": {
+          "reasoning_tokens": 545
+        }
+      },
+      "raw_answer": "{\"intent\":\"creative\",\"reply\":\"Would you like to switch to Creative mode for a chipmunk effect?\",\"changes\":{}}",
+      "answer": {
+        "reply": "Select Creative mode to try character or exaggerated voice effects.",
+        "changes": {},
+        "rejected": [],
+        "intent": "clarify"
+      },
+      "seconds": 1.74
+    },
+    {
+      "id": 9,
+      "mode": "creative",
+      "request": "Make me sound like a robot.",
+      "expectation": "question_or_unsupported",
+      "status": "FAIL",
+      "http_status": 200,
+      "usage": {
+        "queue_time": 0.177762217,
+        "prompt_tokens": 3135,
+        "prompt_time": 0.168298219,
+        "completion_tokens": 461,
+        "completion_time": 0.471498133,
+        "total_tokens": 3596,
+        "total_time": 0.639796352,
+        "completion_tokens_details": {
+          "reasoning_tokens": 427
+        }
+      },
+      "raw_answer": "{\"intent\":\"creative\",\"reply\":\"Sure, shifting your pitch up a bit.\",\"changes\":{\"pitchSemitones\":3}}",
+      "answer": {
+        "reply": "Sure, shifting your pitch up a bit.",
+        "changes": {
+          "pitchSemitones": 3.0
+        },
+        "rejected": [],
+        "intent": "creative"
+      },
+      "seconds": 1.56
+    },
+    {
+      "id": 10,
+      "mode": "creative",
+      "request": "Make my voice different.",
+      "expectation": "question_or_unsupported",
+      "status": "PASS",
+      "http_status": 200,
+      "usage": {
+        "queue_time": 0.081015479,
+        "prompt_tokens": 3133,
+        "prompt_time": 0.186325684,
+        "completion_tokens": 197,
+        "completion_time": 0.207563525,
+        "total_tokens": 3330,
+        "total_time": 0.393889209,
+        "completion_tokens_details": {
+          "reasoning_tokens": 167
+        }
+      },
+      "raw_answer": "{\"intent\":\"clarify\",\"reply\":\"What kind of change would you like?\",\"changes\":{}}",
+      "answer": {
+        "reply": "What kind of change would you like?",
+        "changes": {},
+        "rejected": [],
+        "intent": "clarify"
+      },
+      "seconds": 1.22
+    }
+  ]
+}

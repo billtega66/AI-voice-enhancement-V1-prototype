@@ -387,9 +387,45 @@
      -> Presence -> Air -> Pitch -> De-esser -> Compressor -> Makeup -> Loudness -> Output gain -> Limiter */
   const STAGES = [
     ['input', 'Input gain'], ['ns', 'Noise suppression'], ['vad', 'Speech detection'], ['hpf', 'High-pass'],
-    ['eq', 'Tone EQ'], ['pitch', 'Pitch'], ['deess', 'De-esser'], ['comp', 'Compressor'],
+    ['eq', 'Tone EQ'], ['pitch', 'Pitch'], ['creative', 'Creative effects'], ['deess', 'De-esser'], ['comp', 'Compressor'],
     ['loud', 'Loudness'], ['out', 'Output + limiter'],
   ];
+
+  class EffectsChain {
+    constructor(fs) {
+      this.fs = fs; this.phase = 0; this.position = 0;
+      this.delay = new Float32Array(Math.floor(fs) + 1);
+      this.modules = {
+        metallic: (b, p) => {
+          if (!p.metallicMix) return;
+          const step = 2 * Math.PI * p.metallicHz / fs;
+          for (let i = 0; i < b.length; i++) {
+            b[i] *= 1 - p.metallicMix + p.metallicMix * Math.sin(this.phase);
+            this.phase = (this.phase + step) % (2 * Math.PI);
+          }
+        },
+        distortion: (b, p) => {
+          if (!p.distortionDrive) return;
+          const gain = 1 + p.distortionDrive * 15;
+          for (let i = 0; i < b.length; i++) b[i] = Math.tanh(b[i] * gain) / gain;
+        },
+        echo: (b, p) => {
+          if (!p.echoMix) { this.delay.fill(0); return; }
+          const delay = Math.max(1, Math.round(fs * p.echoMs / 1000)), size = this.delay.length;
+          for (let i = 0; i < b.length; i++) {
+            const wet = this.delay[(this.position - delay + size) % size], dry = b[i];
+            this.delay[this.position] = dry + wet * p.echoFeedback;
+            b[i] = dry * (1 - p.echoMix) + wet * p.echoMix;
+            this.position = (this.position + 1) % size;
+          }
+        },
+      };
+    }
+    process(b, p) {
+      const order = p.echoBeforeTexture ? ['echo', 'metallic', 'distortion'] : ['metallic', 'distortion', 'echo'];
+      for (const name of order) this.modules[name](b, p);
+    }
+  }
 
   class Pipeline {
     constructor(fs, params) {
@@ -397,6 +433,7 @@
       this.ns = new NoiseSuppressor(fs); this.gate = new SpeechGate(fs);
       this.hpf = new Biquad(); this.mud = new Biquad(); this.warm = new Biquad(); this.pres = new Biquad(); this.air = new Biquad();
       this.shifter = new PitchShifter(fs); this.deess = new DeEsser(fs); this.comp = new Compressor(fs);
+      this.effects = new EffectsChain(fs);
       this.loud = new LoudnessNormalizer(fs); this.lim = new Limiter(fs);
       this.inMeter = new LoudnessMeter(fs); this.outMeter = new LoudnessMeter(fs);
       this.stageUs = Object.fromEntries(STAGES.map(s => [s[0], 0])); this.timeStages = true;
@@ -447,6 +484,8 @@
       t = this._t('eq', t);
       if (this.pitchActive) this.shifter.process(b);
       t = this._t('pitch', t);
+      this.effects.process(b, p);
+      t = this._t('creative', t);
       if (p.deEssEnabled) this.deess.process(b); else this.deess.grDb = 0;
       t = this._t('deess', t);
       if (p.compEnabled) {
@@ -554,6 +593,6 @@
   root.DSP = {
     dbToLin, linToDb, powToDb, clamp, rms, peak, now, Biquad, FFT, NoiseSuppressor, SpeechGate, energyOnlyDecisions,
     DeEsser, Compressor, LoudnessMeter, LoudnessNormalizer, integratedLufs, kFilters, PitchShifter, Limiter, Stats,
-    STAGES, Pipeline, renderOffline, makeSampleVoice,
+    STAGES, EffectsChain, Pipeline, renderOffline, makeSampleVoice,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

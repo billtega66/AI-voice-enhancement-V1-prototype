@@ -28,6 +28,10 @@ window.VOICE_SCHEMA_DOC = {
       "name": "Pitch"
     },
     {
+      "id": "creative",
+      "name": "Creative effects"
+    },
+    {
       "id": "deess",
       "name": "De-esser"
     },
@@ -308,11 +312,114 @@ window.VOICE_SCHEMA_DOC = {
       "step": 0.1,
       "unit": "dBFS",
       "def": -1
+    },
+    "metallicMix": {
+      "group": "creative",
+      "label": "Metallic texture",
+      "type": "num",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "unit": "",
+      "def": 0
+    },
+    "metallicHz": {
+      "group": "creative",
+      "label": "Metallic frequency",
+      "type": "num",
+      "min": 20,
+      "max": 200,
+      "step": 0.5,
+      "unit": "Hz",
+      "def": 60
+    },
+    "distortionDrive": {
+      "group": "creative",
+      "label": "Distortion",
+      "type": "num",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "unit": "",
+      "def": 0
+    },
+    "echoMix": {
+      "group": "creative",
+      "label": "Echo blend",
+      "type": "num",
+      "min": 0,
+      "max": 0.6,
+      "step": 0.05,
+      "unit": "",
+      "def": 0
+    },
+    "echoMs": {
+      "group": "creative",
+      "label": "Echo delay",
+      "type": "num",
+      "min": 40,
+      "max": 700,
+      "step": 10,
+      "unit": "ms",
+      "def": 180
+    },
+    "echoFeedback": {
+      "group": "creative",
+      "label": "Echo repeats",
+      "type": "num",
+      "min": 0,
+      "max": 0.65,
+      "step": 0.05,
+      "unit": "",
+      "def": 0.25
+    },
+    "echoBeforeTexture": {
+      "group": "creative",
+      "label": "Echo before texture",
+      "type": "bool",
+      "def": false
     }
-  }
+  },
+  "modules": [
+    {
+      "id": "pitch",
+      "capability": "pitch_shift",
+      "controls": [
+        "pitchSemitones"
+      ],
+      "description": "Changes pitch; character approximations only, no independent formant control."
+    },
+    {
+      "id": "metallic",
+      "capability": "metallic_modulation",
+      "controls": [
+        "metallicMix",
+        "metallicHz"
+      ],
+      "description": "Ring modulation for metallic robotic texture; does not alter speech timing."
+    },
+    {
+      "id": "distortion",
+      "capability": "distortion",
+      "controls": [
+        "distortionDrive"
+      ],
+      "description": "Soft saturation for rough or gritty texture."
+    },
+    {
+      "id": "echo",
+      "capability": "echo",
+      "controls": [
+        "echoMix",
+        "echoMs",
+        "echoFeedback"
+      ],
+      "description": "Repeating delay; no reverberation or room simulation."
+    }
+  ]
 };
 window.VOICE_REFERENCE = {
-  "source": "Built-in podcast defaults (replace with the team\u2019s measured reference values)",
+  "source": "Built-in podcast defaults (replace with the team\u00e2\u20ac\u2122s measured reference values)",
   "integratedLufs": -16,
   "truePeakDb": -1,
   "lowMidRelDb": -6,

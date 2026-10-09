@@ -50,11 +50,11 @@
         async interpret(text, ctx) {
           const r = await self.request('/api/interpret', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, profile: ctx.profile, analysis: ctx.analysis && ctx.analysis.ok ? ctx.analysis : null, reference: ctx.reference, history: ctx.history || [] }),
+            body: JSON.stringify({ text, profile: ctx.profile, analysis: ctx.analysis && ctx.analysis.ok ? ctx.analysis : null, reference: ctx.reference, history: ctx.history || [], mode: ctx.mode || 'enhancement' }),
           });
           if (!r.ok) throw await self._err(r);
           const j = await r.json();
-          return { reply: j.reply, changes: j.changes, rejected: j.rejected, serverNote: j.note, via: j.interpreter };
+          return { reply: j.reply, changes: j.changes, rejected: j.rejected, serverNote: j.note, via: j.interpreter, target: j.target, support: j.support };
         },
       };
     },

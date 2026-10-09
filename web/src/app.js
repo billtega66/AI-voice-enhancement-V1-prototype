@@ -82,6 +82,8 @@
   };
 
   async function setRecording(data, fs, label) {
+    candidates.stop();
+    for (const item of candidates.items) item.applyButton.disabled = true;
     player.stop();
     if (recorder.on) recorder.stop();
     live.stop();
@@ -149,6 +151,7 @@
     get duration() { return preview.orig ? preview.orig.duration : 0; },
     get position() { return this.playing ? Math.min(this.duration, ctx.currentTime - this.startAt) : this.offset; },
     async play(from) {
+      candidates.stop();
       if (!preview.enh) return;
       const c = await audio(); live.stop();
       this.stopNodes();
@@ -186,6 +189,7 @@
   const live = {
     on: false, pending: false, which: 'enhanced', stream: null, pl: null, remote: null, last: null, stats: new D.Stats(2000), blocks: 0, over: 0, chunk: 1024, vol: 0, profileName: '', mode: 'browser',
     async start() {
+      candidates.stop();
       if (this.on) return;
       const c = await audio(); player.pause(); if (recorder.on) recorder.stop();
       this.stream = await openMic();
@@ -245,6 +249,7 @@
 
   /* ============================ profile changes ============================ */
   store.on((diff, source) => {
+    candidates.clear();
     if (source !== 'undo') {
       undoStack.push(Object.fromEntries(diff.map(d => [d.key, d.from])));
       if (undoStack.length > 30) undoStack.shift();
@@ -272,10 +277,65 @@
     ui.useMsg(`Editing “${S.active.name}”. Press Use voice again to save your changes.`, '');
   }
 
+  /* ============================ candidate previews ============================ */
+  const candidates = {
+    items: [], version: -1, mode: 'enhancement', source: null, generation: 0,
+    stop() { if (this.source) { try { this.source.stop(); } catch (_) {} this.source.disconnect(); this.source = null; } },
+    clear() { this.stop(); this.generation++; this.items = []; $('#candidatePanel').hidden = true; },
+    stage(base, changes, result) {
+      this.clear(); this.version = store.version; this.mode = $('#voiceMode').value;
+      this.items = window.VoiceCandidates.make(base, changes);
+      $('#candidatePanel').hidden = false;
+      $('#candidateTarget').textContent = (result.target || result.reply || 'Suggested voice change') + (result.support === 'approximation' ? ' · Approximation' : '');
+      $('#candidateStatus').textContent = S.rec ? 'Choose a preview to listen.' : 'Record, upload, or use the sample voice, then listen to a preview.';
+      const box = $('#candidateChoices'); box.replaceChildren();
+      this.items.forEach((item, index) => {
+        const row = document.createElement('div'); row.className = 'btns';
+        const label = document.createElement('strong'); label.textContent = item.label; row.appendChild(label);
+        const listen = document.createElement('button'); listen.className = 'btn sm'; listen.textContent = 'Listen';
+        listen.onclick = () => this.listen(index).catch(e => { $('#candidateStatus').textContent = e.message; });
+        const apply = document.createElement('button'); apply.className = 'btn primary sm'; apply.textContent = 'Apply'; apply.disabled = true;
+        apply.onclick = () => {
+          if (!this.fresh()) return;
+          const diff = store.set(item.changes, 'ai').diff;
+          addMsg('ai', 'Applied ' + item.label.toLowerCase() + '. Tell me what to refine after listening.', { diff });
+          S.history.push({ role: 'assistant', content: JSON.stringify({ applied: true, changes: item.changes }) });
+        };
+        item.applyButton = apply; row.append(listen, apply); box.appendChild(row);
+      });
+    },
+    fresh() {
+      if (this.version !== store.version || this.mode !== $('#voiceMode').value) {
+        this.clear(); addMsg('ai', 'Settings or mode changed. Ask again for fresh previews.'); return false;
+      }
+      return true;
+    },
+    async listen(index) {
+      if (!this.fresh()) return;
+      if (!S.rec) throw new UserError('Load a recording or use the sample voice first.');
+      this.stop(); player.stop(); live.stop();
+      const generation = this.generation, recording = S.rec, c = await audio();
+      if (generation !== this.generation || recording !== S.rec || !this.fresh()) return;
+      const item = this.items[index];
+      const data = recording.data.slice(0, Math.min(recording.data.length, recording.fs * 6));
+      const result = D.renderOffline(data, recording.fs, item.params, 1024);
+      const metrics = window.VoiceCandidates.measure(result.data, recording.fs);
+      if (!metrics.finite || metrics.clipped) throw new UserError('This preview failed the audio safety check. Try a gentler request.');
+      const buffer = c.createBuffer(1, result.data.length, recording.fs); buffer.getChannelData(0).set(result.data);
+      const node = c.createBufferSource(); node.buffer = buffer; node.connect(c.destination); this.source = node;
+      node.onended = () => { node.disconnect(); if (this.source === node) this.source = null; };
+      node.start(); item.applyButton.disabled = false;
+      $('#candidateStatus').textContent = `${item.label}: ${f(data.length / recording.fs, 1)} s preview · peak ${f(metrics.peakDb, 1)} dBFS · loudness ${f(metrics.loudness, 1)} LUFS · no clipped samples. These checks do not measure similarity to your requested effect.`;
+    },
+  };
+  $('#dismissCandidates').onclick = () => candidates.clear();
+  $('#voiceMode').addEventListener('change', () => candidates.clear());
+
   /* ============================ AI chat ============================ */
   async function send(text) {
     text = (text || '').trim(); if (!text || S.busy) return;
     S.busy = true; $('#send').disabled = true; $('#prompt').value = '';
+    candidates.clear();
     try {
     addMsg('user', text);
     $$('#suggest button').forEach(b => b.disabled = true);
@@ -283,7 +343,7 @@
     $('#send').textContent = 'Working…';
     const thinking = addMsg('ai', 'Working out the settings…');
     thinking.classList.add('thinking');
-    const ctxAI = { profile: store.get(), analysis: S.analysis, reference: S.reference, history: S.history };
+    const ctxAI = { profile: store.get(), analysis: S.analysis, reference: S.reference, history: S.history, mode: $('#voiceMode').value };
     let res, note = '';
     try { res = await S.interpreter.interpret(text, ctxAI); }
     catch (e) {
@@ -294,12 +354,22 @@
       res = await AI.OfflineInterpreter.interpret(text, ctxAI);
     }
     if (res.serverNote) note = res.serverNote;
+    if (ctxAI.mode !== $('#voiceMode').value) throw new UserError('Voice mode changed while the AI was answering. Ask again in the selected mode.');
     // Preserve fields manually edited while the model was answering.
     const current = store.get(), changes = {}, skipped = [];
     for (const [k, v] of Object.entries(res.changes || {})) {
       if (current[k] !== ctxAI.profile[k]) skipped.push(k); else changes[k] = v;
     }
     if (skipped.length) note += (note ? ' ' : '') + 'Kept the settings you edited while I was answering: ' + skipped.map(k => VP.SCHEMA[k]?.label || k).join(', ') + '.';
+    if (Object.entries(changes).some(([key, value]) => current[key] !== value)) {
+      thinking.remove();
+      candidates.stage(current, changes, res);
+      const reply = 'I prepared voice previews. Listen to Suggested or Gentler below, then apply your choice.';
+      addMsg('ai', reply, { note, rejected: (res.rejected || []).concat(VP.validateChanges(changes).rejected) });
+      S.history.push({ role: 'user', content: text }, { role: 'assistant', content: JSON.stringify({ target: res.target, proposed: changes, applied: false }) });
+      S.history = S.history.slice(-24);
+      return { diff: [], reply };
+    }
     const { diff, rejected } = store.set(changes, 'ai');
     const plain = AI.describeDiff(diff);
     let reply = res.reply || (diff.length ? 'Done: ' + plain.join(', ') + '.' : 'Nothing needed to change.');

@@ -20,6 +20,7 @@ import math
 import os
 import time
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 import secrets
@@ -61,6 +62,7 @@ class Changes(BaseModel):
 
 
 class InterpretBody(BaseModel):
+    mode: Literal['enhancement', 'creative'] = 'enhancement'
     text: str = Field(..., min_length=1, max_length=2000)
     profile: dict = Field(default_factory=dict)
     analysis: dict | None = None
@@ -113,7 +115,8 @@ def create_app(backend_name: str | None = None, interpreter=None) -> FastAPI:
 
     @app.get("/api/schema")
     def schema():
-        return {"groups": GROUPS, "parameters": SCHEMA, "defaults": DEFAULTS, "reference": DEFAULT_REFERENCE}
+        from .ai.gateway import capability_catalog
+        return {"groups": GROUPS, "parameters": SCHEMA, "defaults": DEFAULTS, "reference": DEFAULT_REFERENCE, 'capabilities': capability_catalog()}
 
     @app.post("/api/profile/validate")
     def validate(body: Changes):
@@ -147,7 +150,7 @@ def create_app(backend_name: str | None = None, interpreter=None) -> FastAPI:
         # Anonymous guest id (cookie) so rate limits apply per browser, as well as one global daily budget.
         owner = request.cookies.get("voice_guest") or secrets.token_urlsafe(12)
         ctx = {"profile": full_profile(body.profile), "analysis": body.analysis, "reference": body.reference or DEFAULT_REFERENCE,
-               "history": body.history, "owner": owner}
+               "history": body.history, "owner": owner, "mode": body.mode}
         note, used = None, interp
         try:
             res = await asyncio.to_thread(interp.interpret, body.text, ctx)
@@ -159,7 +162,8 @@ def create_app(backend_name: str | None = None, interpreter=None) -> FastAPI:
             used, note = OfflineInterpreter(), f"{interp.name} failed ({e.__class__.__name__}); the offline interpreter handled this."
             res = used.interpret(body.text, ctx)
         resp = JSONResponse({"reply": res.get("reply"), "changes": res.get("changes", {}), "rejected": res.get("rejected", []),
-                             "interpreter": used.name, "model": getattr(used, "model", None), "note": note})
+                             "interpreter": used.name, "model": getattr(used, "model", None), "note": note, 'intent': res.get('intent'), 'mode': body.mode,
+                             'target': res.get('target'), 'support': res.get('support'), 'requiredCapabilities': res.get('requiredCapabilities', [])})
         if "voice_guest" not in request.cookies:
             resp.set_cookie("voice_guest", owner, max_age=365 * 86400, httponly=True, samesite="lax")
         return resp

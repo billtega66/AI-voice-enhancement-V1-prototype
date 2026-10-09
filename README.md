@@ -16,7 +16,7 @@ User prompt ──► AI Voice Profile Generator ──► Voice Profile (single
 
 | Path | Contents |
 | --- | --- |
-| `shared/` | `voice_profile.schema.json` (all 29 parameters, ranges, defaults) and `reference_profile.json` (podcast target). Both the browser and the server load these files. |
+| `shared/` | `voice_profile.schema.json` (parameters, ranges, defaults, and creative module descriptors) and `reference_profile.json` (podcast target). Both the browser and the server load these files. |
 | `web/` | The web app: AI chat, preview with Original/Enhanced comparison, Use voice, live microphone, Mixer, voice analysis, self-test. Runs fully in the browser, or uses the server when served by it. |
 | `server/voice_engine/` | Python engine and API: sample-accurate port of the browser DSP, voice analysis, AI interpreter, CPU and ROCm backends, FastAPI REST + WebSocket server, CLI. |
 | `tests/` | Node runner for the browser self-test, browser/server parity fixtures, Playwright end-to-end tests. Server unit and API tests are in `server/tests/`. |
@@ -88,7 +88,7 @@ The parity tests render the same input through `web/src/dsp.js` and `server/voic
 
 ## Status and limits
 
-Working: every control in the Mixer is connected to processing (a test changes each of the 29 parameters and checks the output changes); AI and Mixer edit one profile; recording, playback, A/B, Use voice, live microphone, bypass, error messages; CPU server backend with REST and WebSocket streaming.
+Working: Mixer controls are connected to processing; AI suggestions are previewed as Suggested/Gentler candidates before applying to the same profile. Creative mode adds metallic modulation, distortion, and echo with selectable order. Recording, playback, A/B, Use voice, live microphone, bypass, error messages, and CPU server REST/WebSocket streaming are implemented. See `docs/LLM_GATEWAY.md` for the capability catalog and preview workflow.
 
 Not yet implemented:
 

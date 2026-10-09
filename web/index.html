@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Voice Enhancer · Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -263,6 +264,7 @@ h3{font-size:16px}
 @media(max-width:840px){.empty{padding:4px 8px}.empty .assistant-mark{width:32px;height:32px;font-size:20px;margin-bottom:8px}.empty h3{font-size:17px;margin-bottom:6px}.empty p{font-size:13px;margin-bottom:6px;line-height:1.5}.empty>.small{display:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
+@media(max-width:840px){.candidate-panel{order:3}}
 </style>
 </head>
 <body>
@@ -301,6 +303,9 @@ h3{font-size:16px}
     <div class="chat-head">
       <div><p class="eyebrow">YOUR SOUND, IN YOUR WORDS</p><h2>AI sound assistant</h2></div>
       <span class="small muted who" id="aiWho">AI: offline interpreter</span>
+      <label class="small" for="voiceMode">Voice mode</label>
+      <select id="voiceMode"><option value="enhancement">Enhancement — natural voice</option><option value="creative">Creative — character effects</option></select>
+      <p class="small muted">Creative mode allows stronger pitch effects. Preview before using your voice.</p>
     </div>
     <div class="msgs" id="msgs" aria-live="polite">
       <div class="empty" id="chatEmpty"><span class="assistant-mark" aria-hidden="true">✦</span><h3>What’s your ideal sound?</h3><p>Tell me what you want to change. I’ll adjust your voice settings so you can hear the difference.</p><span class="small muted">Try a suggestion below to get started.</span></div>
@@ -329,6 +334,14 @@ h3{font-size:16px}
         <span class="time" id="time">0.0 / 0.0 s</span>
       </div>
       <p class="status small muted" id="previewStatus" role="status">Load a recording to listen to your original and enhanced voice.</p><div class="preview-footer"><span class="small muted">Switch versions as you listen.</span><button class="btn sm" id="downloadAudio" disabled>Download enhanced WAV <span aria-hidden="true">↓</span></button></div>
+    </section>
+
+    <section class="panel candidate-panel" id="candidatePanel" aria-label="Candidate voice previews" hidden>
+      <div class="section-head"><h2>Choose your sound</h2><button class="btn sm" id="dismissCandidates">Discard suggestions</button></div>
+      <p class="small" id="candidateTarget"></p>
+      <p class="small muted">Listen to a short preview, then apply your choice. Your current settings stay in place until you apply.</p>
+      <div id="candidateChoices"></div>
+      <p class="status small" id="candidateStatus" role="status"></p>
     </section>
 
     <section class="panel profile-panel" aria-label="Voice profile">
@@ -450,6 +463,7 @@ flowchart TB
 <script src="src/ai.js"></script>
 <script src="src/selftest.js"></script>
 <script src="src/server-client.js"></script>
+<script src="src/candidates.js"></script>
 <script src="src/app.js"></script>
 </body>
 </html>

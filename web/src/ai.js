@@ -82,6 +82,13 @@
     }
     const clauses = t.split(/[,.;!?]|\bbut\b|\band\b|\bthen\b|\balso\b/).map(s => s.trim()).filter(Boolean);
     for (const c of clauses) {
+      if (/\b(helium|chipmunks?|cartoon voices?)\b/.test(c)) {
+        if (!/\b(not|no|without|avoid|remove|stop|don't|do not)\b/.test(c)) {
+          p.pitchSemitones = Math.min(3, p.pitchSemitones + 3 * intensity(c));
+          touched.add('pitchSemitones'); matched = true; special = 'creative';
+        }
+        continue;
+      }
       const k = intensity(c);
       const neg = /\b(less|not so|not as|too|without|reduce|cut|tone down|remove|decrease|turn down|lower the)\b/.test(c);
       for (const [re, kind, fn] of RULES) {
@@ -99,6 +106,9 @@
     label: 'Offline interpreter (keyword rules)',
     async interpret(text, ctx) {
       const r = localInterpret(text, ctx.profile, ctx.analysis, ctx.reference);
+      if (ctx.mode !== 'creative' && (r.special === 'creative' || Math.abs((r.changes.pitchSemitones ?? ctx.profile.pitchSemitones) - ctx.profile.pitchSemitones) > 1.5)) {
+        return { reply: 'Select Creative mode to try stronger pitch effects.', changes: {}, rejected: [] };
+      }
       if (!r.matched) return { reply: 'I could not map that to a sound change yet. Try words like warmer, clearer, deeper, steadier volume, less background noise, or softer S sounds.', changes: {} };
       return { reply: r.reply || null, changes: r.changes, special: r.special };
     },

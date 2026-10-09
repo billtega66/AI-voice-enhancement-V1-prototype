@@ -11,12 +11,28 @@ numba. The STFT noise suppressor is vectorised with numpy per frame.
 from __future__ import annotations
 
 import math
+import warnings
 from dataclasses import dataclass, field
 
 import numpy as np
-from numba import njit
+try:
+    from numba import njit
+except (ImportError, OSError):
+    warnings.warn(
+        "Numba acceleration is unavailable; using Python audio processing. "
+        "Server audio processing may be slower.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
+
+    def njit(*args, **kwargs):
+        """Keep DSP functions usable when native acceleration cannot load."""
+        if args and callable(args[0]):
+            return args[0]
+        return lambda function: function
 
 from ..profile import DEFAULTS
+from .effects import EffectsChain
 
 # --------------------------------------------------------------------------- helpers
 
@@ -625,7 +641,7 @@ class PitchShifter:
 
 # --------------------------------------------------------------------------- pipeline
 
-STAGES = ["input", "ns", "vad", "hpf", "eq", "pitch", "deess", "comp", "loud", "out"]
+STAGES = ["input", "ns", "vad", "hpf", "eq", "pitch", "creative", "deess", "comp", "loud", "out"]
 
 
 @dataclass
@@ -665,6 +681,7 @@ class Pipeline:
         self.gate = SpeechGate(fs)
         self.hpf, self.mud, self.warm, self.pres, self.air = (Biquad() for _ in range(5))
         self.shifter = PitchShifter(fs)
+        self.effects = EffectsChain(fs)
         self.deess = DeEsser(fs)
         self.comp = Compressor(fs)
         self.loud = LoudnessNormalizer(fs)
@@ -731,6 +748,7 @@ class Pipeline:
         if p["airDb"] != 0: self.air.process(b)
         if self.pitch_active:
             self.shifter.process(b)
+        self.effects.process(b, p)
         if p["deEssEnabled"]:
             self.deess.process(b)
         else:

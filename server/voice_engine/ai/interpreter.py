@@ -80,6 +80,13 @@ def local_interpret(text: str, profile: dict, analysis: dict | None, ref: dict) 
         matched, special = True, "podcast"
     clauses = [c.strip() for c in re.split(r"[,.;!?]|\bbut\b|\band\b|\bthen\b|\balso\b", t, flags=A) if c and c.strip()]
     for c in clauses:
+        if re.search(r"\b(helium|chipmunks?|cartoon voices?)\b", c, A):
+            if not re.search(r"\b(not|no|without|avoid|remove|stop|don't|do not)\b", c, A):
+                p["pitchSemitones"] = min(3, p["pitchSemitones"] + 3 * _intensity(c))
+                touch(["pitchSemitones"])
+                matched = True
+                special = 'creative'
+            continue
         k = _intensity(c)
         neg = bool(re.search(r"\b(less|not so|not as|too|without|reduce|cut|tone down|remove|decrease|turn down|lower the)\b", c, A))
         for rx, kind, fn in RULES:
@@ -119,6 +126,8 @@ class OfflineInterpreter:
 
     def interpret(self, text: str, ctx: dict) -> dict:
         r = local_interpret(text, ctx["profile"], ctx.get("analysis"), ctx["reference"])
+        if ctx.get('mode', 'enhancement') != 'creative' and (r['special'] == 'creative' or abs(r['changes'].get('pitchSemitones', ctx['profile']['pitchSemitones']) - ctx['profile']['pitchSemitones']) > 1.5):
+            return {'reply': 'Select Creative mode to try stronger pitch effects.', 'changes': {}, 'rejected': []}
         if not r["matched"]:
             return {"reply": "I could not map that to a sound change yet. Try words like warmer, clearer, deeper, steadier volume, less background noise, or softer S sounds.", "changes": {}, "rejected": []}
         ok, rej = validate_changes(r["changes"])
@@ -208,10 +217,12 @@ class ClaudeInterpreter:
         self.client = client
 
     def interpret(self, text: str, ctx: dict) -> dict:
-        system, msgs = build_messages(ctx.get("history", []), text, ctx)
+        from .gateway import build_prompts, check_answer
+        system, user = build_prompts(text, ctx)
+        msgs = [{'role': 'user', 'content': user}]
         resp = self.client.messages.create(model=self.model, max_tokens=600, system=system, messages=msgs)
         out = "".join(getattr(b, "text", "") for b in resp.content)
-        return parse_ai_response(out)
+        return check_answer(json.loads(re.sub(r'^\s*```(?:json)?\s*|\s*```\s*$', '', out)), text, ctx['profile'], ctx.get('mode', 'enhancement'))
 
 
 def get_interpreter():

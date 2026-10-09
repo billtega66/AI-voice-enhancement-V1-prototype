@@ -31,6 +31,17 @@ def send(pg, text):
     pg.wait_for_timeout(500)
 
 
+def apply_suggested(pg):
+    if pg.is_visible('#candidatePanel'):
+        if not ev(pg, 'Boolean(window.__ve.S.rec)'):
+            pg.click('#sampleBtn')
+            pg.wait_for_function('window.__ve.preview.enhData !== null')
+        row = pg.locator('#candidateChoices > div').first
+        row.get_by_role('button', name='Listen', exact=True).click()
+        row.get_by_role('button', name='Apply', exact=True).click()
+        pg.wait_for_timeout(700)
+
+
 def test_standalone_in_page_selftest(page_factory, dist_url):
     pg = page_factory(dist_url)
     ev(pg, "window.__ve.setView('mixer')"); ev(pg, "document.querySelectorAll('details.box').forEach(d=>d.open=true)")
@@ -57,6 +68,7 @@ def test_standalone_full_workflow(page_factory, dist_url):
     # 5, 14: AI changes the processing and the preview regenerates
     before = ev(pg, "({r: window.__ve.preview.renders, s: Array.from(window.__ve.preview.enhData.slice(48000, 48100))})")
     send(pg, "Make my voice warmer, clearer, and more professional, like a podcast.")
+    apply_suggested(pg)
     after = ev(pg, "({r: window.__ve.preview.renders, s: Array.from(window.__ve.preview.enhData.slice(48000, 48100))})")
     assert ev(pg, "window.__ve.store.get().warmthDb") == 3 and after["r"] > before["r"] and after["s"] != before["s"]
     assert "bogus" in pg.inner_text("#msgs")  # invalid AI key shown, not applied
@@ -66,6 +78,7 @@ def test_standalone_full_workflow(page_factory, dist_url):
     pg.fill("#r-warmthDb", "4.5"); pg.dispatch_event("#r-warmthDb", "input")
     pg.click("#mxBack")
     send(pg, "Keep everything else but make it slightly clearer.")
+    apply_suggested(pg)
     p = ev(pg, "window.__ve.store.get()")
     assert p["warmthDb"] == 4.5 and p["presenceDb"] == 1 and p["compRatio"] == 3
     assert "now 4.5" in ev(pg, "window.__turns[window.__turns.length-1][0].content")
@@ -81,7 +94,7 @@ def test_standalone_full_workflow(page_factory, dist_url):
     pg.click("#bypass"); pg.click("#mxLive")
     pg.reload(); pg.wait_for_function("window.__ve && window.__ve.ready")
     assert "Warm podcast" in pg.inner_text("#activeChip")
-    assert not pg.errors, pg.errors
+    assert not pg.errors, (pg.errors, pg.not_found)
 
 
 def test_standalone_reports_blocked_microphone(page_factory, dist_url):
@@ -91,6 +104,41 @@ def test_standalone_reports_blocked_microphone(page_factory, dist_url):
     assert "Microphone access was blocked" in pg.inner_text("#recStatus")
     pg.click("#liveBtn"); pg.wait_for_timeout(500)
     assert "Microphone access was blocked" in pg.inner_text("#liveStatus")
+
+
+@pytest.mark.parametrize('width', [1360, 375])
+def test_candidates_preview_before_apply_and_preserve_manual_edits(page_factory, dist_url, width):
+    pg = page_factory(dist_url, viewport={'width': width, 'height': 960})
+    ev(pg, """window.__ve.S.interpreter={name:'test',interpret:async()=>({
+        reply:'Try a metallic texture.',target:'A metallic voice with short repeats',support:'approximation',
+        changes:{metallicMix:.4,echoMix:.2,limiterEnabled:true}})}""")
+    pg.select_option('#voiceMode', 'creative')
+    send(pg, 'Give me a metallic voice with short repeats.')
+    assert ev(pg, 'window.__ve.store.get().metallicMix') == 0
+    assert ev(pg, 'document.documentElement.scrollWidth <= window.innerWidth')
+    import os
+    from pathlib import Path
+    if os.environ.get('VOICE_TEST_SCREENSHOTS'):
+        folder = Path(os.environ['VOICE_TEST_SCREENSHOTS']); folder.mkdir(parents=True, exist_ok=True)
+        pg.screenshot(path=str(folder / f'candidate-preview-{width}.png'), full_page=True)
+    assert pg.is_visible('#candidatePanel')
+    assert pg.locator('#candidateChoices > div').count() == 2
+    gentler = pg.locator('#candidateChoices > div').nth(1)
+    assert gentler.get_by_role('button', name='Apply', exact=True).is_disabled()
+    pg.click('#sampleBtn')
+    pg.wait_for_function('window.__ve.preview.enhData !== null')
+    gentler.get_by_role('button', name='Listen', exact=True).click()
+    assert 'no clipped samples' in pg.inner_text('#candidateStatus')
+    assert ev(pg, 'window.__ve.store.get().metallicMix') == 0
+    gentler.get_by_role('button', name='Apply', exact=True).click()
+    assert ev(pg, 'window.__ve.store.get().metallicMix') == .2
+    assert ev(pg, 'window.__ve.store.get().echoMix') == .1
+    assert not pg.is_visible('#candidatePanel')
+    send(pg, 'Another version.')
+    ev(pg, "window.__ve.store.set({warmthDb:4.5},'mixer')")
+    assert not pg.is_visible('#candidatePanel')
+    assert ev(pg, 'window.__ve.store.get().warmthDb') == 4.5
+    assert not pg.errors, pg.errors
 
 
 def test_served_uses_server_backend(page_factory, server_url):
@@ -133,15 +181,18 @@ def test_served_with_llm_gateway(page_factory, gateway_server_url):
     pg = page_factory(app_url + "/")
     pg.wait_for_function("window.__ve.S.server !== null", timeout=5000)
     assert pg.inner_text("#aiWho") == "AI: voice server (gateway: test-model)"
+    ev(pg, "window.__ve.S.engine='browser'")  # candidate UI check, independent of CPU acceleration
     send(pg, "Make my voice warmer, clearer, and more professional, like a podcast.")
+    apply_suggested(pg)
     p = ev(pg, "window.__ve.store.get()")
     assert p["warmthDb"] == 3 and p["compRatio"] == 3
-    assert "podcast sound" in pg.inner_text("#msgs")
+    assert 'Applied suggested' in pg.inner_text('#msgs')
     # Mixer edit survives the next AI turn, because the gateway is given the current values
     ev(pg, "window.__ve.setView('mixer')")
     pg.fill("#r-warmthDb", "4.5"); pg.dispatch_event("#r-warmthDb", "input")
     pg.click("#mxBack")
     send(pg, "Keep everything else but make it slightly clearer.")
+    apply_suggested(pg)
     p = ev(pg, "window.__ve.store.get()")
     assert p["warmthDb"] == 4.5 and p["presenceDb"] == 3
     # a hostile answer is rejected whole and the offline rules take over, with a visible note
@@ -153,7 +204,7 @@ def test_served_with_llm_gateway(page_factory, gateway_server_url):
     assert all(r["chat_template_kwargs"] == {"enable_thinking": False} for r in reqs)
     assert "now 4.5" in reqs[1]["messages"][0]["content"]
     assert _json.loads(reqs[1]["messages"][1]["content"])["recentConversation"][0]["role"] == "user"
-    assert not pg.errors, pg.errors
+    assert not pg.errors, (pg.errors, pg.not_found)
 
 
 def test_studio_export_undo_and_keyboard_seek(page_factory, dist_url):
@@ -193,6 +244,7 @@ def test_ai_preserves_concurrent_manual_edit(page_factory, dist_url):
     pg.fill('#prompt', 'warmer and clearer'); pg.click('#send')
     ev(pg, "window.__ve.store.set({warmthDb:4.5}, 'mixer')")
     pg.wait_for_function('!window.__ve.S.busy')
+    apply_suggested(pg)
     assert ev(pg, 'window.__ve.store.get().warmthDb') == 4.5
     assert ev(pg, 'window.__ve.store.get().presenceDb') == 2
     assert 'Kept the settings you edited' in pg.inner_text('#msgs')

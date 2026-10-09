@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from voice_engine.ai import OfflineInterpreter
 from voice_engine.audio_io import wav_bytes
 from voice_engine.dsp import render_offline
-from voice_engine.profile import DEFAULTS
+from voice_engine.profile import DEFAULTS, SCHEMA
 from voice_engine.server import create_app
 
 
@@ -31,7 +31,7 @@ def f32(x):
 
 def test_health_and_schema(client):
     h = client.get("/api/health").json()
-    assert h["ok"] and h["backend"]["name"] == "cpu" and h["interpreter"] == "offline" and h["schemaKeys"] == 29
+    assert h["ok"] and h["backend"]["name"] == "cpu" and h["interpreter"] == "offline" and h["schemaKeys"] == len(SCHEMA)
     assert {b["name"] for b in h["backends"]} == {"cpu", "rocm"}
     s = client.get("/api/schema").json()
     assert s["defaults"]["targetLufs"] == -16 and "integratedLufs" in s["reference"]

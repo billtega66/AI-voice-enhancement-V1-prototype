@@ -98,7 +98,7 @@
 
     { id: 'every', req: '5, 6, 10-13', name: 'Every Mixer parameter changes the processed audio', run() {
       const s = D.makeSampleVoice(FS, { seconds: 6, events: [{ type: 'speech', s: 0.5, e: 2.5, db: -22 }, { type: 'keys', s: 2.8, e: 3.4, db: -24 }, { type: 'speech', s: 3.8, e: 5.6, db: -46 }] });
-      const base = { ...VP.DEFAULTS, outputGainDb: 4, limiterCeilingDb: -3, compThresholdDb: -40 };
+      const base = { ...VP.DEFAULTS, outputGainDb: 4, limiterCeilingDb: -3, compThresholdDb: -40, metallicMix: 0.2, distortionDrive: 0.2, echoMix: 0.2 };
       const ref = render(s.data, base, 512).data, dead = [];
       for (const [k, sc] of Object.entries(VP.SCHEMA)) {
         const v = sc.type === 'bool' ? !base[k] : (sc.max - base[k] > base[k] - sc.min ? sc.max : sc.min);
