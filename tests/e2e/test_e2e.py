@@ -258,7 +258,7 @@ def test_new_recording_wins_over_stale_preview(page_factory, dist_url):
     window.VoiceServer.render = (data, fs) => new Promise(resolve => {
       const first = !window._renderCount; window._renderCount = (window._renderCount || 0) + 1;
       setTimeout(() => resolve({data:new Float32Array(data.length).fill(first ? .1 : .2), infos:[], backend:'test'}), first ? 1000 : 50);
-    });""")
+    }); void 0;""")
     pg.click('#sampleBtn')
     pg.click('#sampleBtn')
     pg.wait_for_function('window.__ve.preview.enhData && window.__ve.preview.enhData[0] > .19')
