@@ -1,4 +1,5 @@
 import socket
+import os
 import subprocess
 import sys
 import time
@@ -14,7 +15,8 @@ ARGS = ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream", 
 @pytest.fixture(scope="session")
 def browser():
     with sync_playwright() as p:
-        b = p.chromium.launch(args=ARGS)
+        executable = os.environ.get('VOICE_TEST_BROWSER')
+        b = p.chromium.launch(args=ARGS, **({'executable_path': executable} if executable else {}))
         yield b
         b.close()
 
@@ -44,7 +46,7 @@ def _start(cmd, port, cwd, env=None):
 def server_url(tmp_path_factory):
     port = _free_port()
     env = {"LLM_BASE_URL": "", "LLM_MODEL": "", "LLM_API_KEY": "", "ANTHROPIC_API_KEY": ""}
-    proc = _start([sys.executable, "-m", "voice_engine.cli", "--env-file", "/dev/null", "serve", "--port", str(port), "--backend", "cpu"], port, ROOT / "server", env)
+    proc = _start([sys.executable, "-m", "voice_engine.cli", "--env-file", os.devnull, "serve", "--port", str(port), "--backend", "cpu"], port, ROOT / "server", env)
     yield f"http://127.0.0.1:{port}"
     proc.terminate(); proc.wait(10)
 
@@ -68,11 +70,13 @@ def page_factory(browser):
     ctxs = []
 
     def make(url, init_script=None, **ctx_kw):
-        ctx = browser.new_context(permissions=["microphone"], viewport={"width": 1360, "height": 960}, **ctx_kw)
+        ctx = browser.new_context(**{'permissions': ['microphone'], 'viewport': {'width': 1360, 'height': 960}, **ctx_kw})
         if init_script:
             ctx.add_init_script(init_script)
         pg = ctx.new_page()
         pg.errors = []
+        pg.not_found = []
+        pg.on('response', lambda r: pg.not_found.append(r.url) if r.status == 404 else None)
         pg.on("pageerror", lambda e: pg.errors.append(str(e)))
         pg.on("console", lambda m: pg.errors.append(m.text) if m.type == "error" and "fonts.g" not in m.text and "403" not in m.text and "ERR_" not in m.text else None)
         pg.goto(url)

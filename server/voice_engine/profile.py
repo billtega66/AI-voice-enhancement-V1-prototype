@@ -24,6 +24,7 @@ REFERENCE_PATH = SHARED / "reference_profile.json"
 _SCHEMA_DOC = json.loads(SCHEMA_PATH.read_text())
 SCHEMA: dict = _SCHEMA_DOC["parameters"]
 GROUPS: list = _SCHEMA_DOC["groups"]
+MODULES: list = _SCHEMA_DOC.get('modules', [])
 DEFAULTS: dict = {k: s["def"] for k, s in SCHEMA.items()}
 DEFAULT_REFERENCE: dict = json.loads(REFERENCE_PATH.read_text())
 

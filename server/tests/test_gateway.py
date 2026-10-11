@@ -104,6 +104,9 @@ def test_fenced_json_is_accepted():
     ({"changes": {}}, "warmer", "wrong shape"),
     ({"reply": "x", "changes": {}, "secret": 1}, "warmer", "unexpected fields"),
     ({"reply": "x", "changes": {"hackerKey": 1}}, "warmer", "do not exist"),
+    ({"reply": "x", "changes": {"warmthDb": 40}}, "warmer", "out-of-range"),
+    ({"reply": "x", "changes": {"pitchSemitones": -1}}, "make it warmer", "without being asked"),
+    ({"reply": "x", "intent": "pitch", "changes": {"pitchSemitones": -3}}, "make it deeper", "too far"),
 ])
 def test_semantic_validation_rejects(obj, text, msg):
     with pytest.raises(ModelUnavailable, match=msg):
@@ -111,8 +114,104 @@ def test_semantic_validation_rejects(obj, text, msg):
 
 
 def test_semantic_validation_accepts_and_quantises():
-    r = check_answer({"reply": "Deeper.", "changes": {"pitchSemitones": -1, "warmthDb": 2.3}}, "slightly deeper", dict(DEFAULTS))
+    r = check_answer({"reply": "Deeper.", "intent": "pitch", "changes": {"pitchSemitones": -1, "warmthDb": 2.3}}, "slightly deeper", dict(DEFAULTS))
     assert r["changes"] == {"pitchSemitones": -1, "warmthDb": 2.5}
+
+
+@pytest.mark.parametrize("text", ["I want to sound like I am having helium", "chipmunk voice", "cartoon voice"])
+def test_creative_pitch_request(text):
+    result = check_answer({"reply": "Higher pitch.", "intent": "creative", "changes": {"pitchSemitones": 3}}, text, dict(DEFAULTS), 'creative')
+    assert result["changes"]["pitchSemitones"] == 3
+    system, _ = build_prompts(text, ctx(mode='creative'))
+    assert "Mode for this request: creative effects" in system
+
+
+def test_non_pitch_intent_does_not_authorize_pitch():
+    with pytest.raises(ModelUnavailable, match="without being asked"):
+        check_answer({"reply": "x", "changes": {"pitchSemitones": 3}}, "I do not want helium", dict(DEFAULTS))
+
+
+def test_creative_intent_requires_selected_mode():
+    answer = {'intent': 'creative', 'reply': 'Higher.', 'changes': {'pitchSemitones': 3}}
+    assert check_answer(answer, 'a squeaky tiny character', dict(DEFAULTS))['changes'] == {}
+
+
+@pytest.mark.parametrize('intent', ['clarify', 'unsupported'])
+def test_unresolved_intent_cannot_modify_audio(intent):
+    with pytest.raises(ModelUnavailable, match='unresolved'):
+        check_answer({'intent': intent, 'reply': 'Question?', 'changes': {'warmthDb': 2}}, 'robot', dict(DEFAULTS))
+
+
+def test_pitch_intent_accepts_unlisted_description():
+    assert check_answer({'intent': 'pitch', 'reply': 'Adjusted.', 'changes': {'pitchSemitones': 1}},
+                        'make my voice more youthful', dict(DEFAULTS))['changes']['pitchSemitones'] == 1
+
+
+def test_api_mode_is_explicit_and_validated():
+    gateway = interp(reply('{"intent":"creative","reply":"Higher character pitch.","changes":{"pitchSemitones":3}}'))
+    client = TestClient(create_app('cpu', interpreter=gateway))
+    body = {'text': 'a squeaky tiny character', 'profile': dict(DEFAULTS)}
+    assert client.post('/api/interpret', json=body).json()['changes'] == {}
+    creative = client.post('/api/interpret', json={**body, 'mode': 'creative'}).json()
+    assert creative['changes']['pitchSemitones'] == 3
+    assert creative['intent'] == 'creative'
+    assert client.post('/api/interpret', json={**body, 'mode': 'unlimited'}).status_code == 422
+
+
+def test_offline_creative_requires_mode_even_for_subtle_effect():
+    from voice_engine.ai.interpreter import OfflineInterpreter
+    offline = OfflineInterpreter()
+    assert offline.interpret('slightly helium', ctx())['changes'] == {}
+    assert offline.interpret('slightly helium', ctx(mode='creative'))['changes']['pitchSemitones'] == 1.5
+
+
+def test_plural_character_effect_survives_provider_rate_limit():
+    gateway = interp(reply('{}', status=429))
+    client = TestClient(create_app('cpu', interpreter=gateway))
+    result = client.post('/api/interpret', json={'text': 'I want to make my voice sounds like chipmunks',
+                                              'mode': 'creative', 'profile': dict(DEFAULTS)}).json()
+    assert result['interpreter'] == 'offline'
+    assert result['changes']['pitchSemitones'] == 3
+    assert 'request or token limit' in result['note']
+
+
+def test_missing_required_capability_cannot_change_audio():
+    answer = {'reply': 'Clone the voice.', 'intent': 'creative', 'requiredCapabilities': ['voice_clone'],
+              'target': 'A different speaker', 'changes': {'pitchSemitones': 3}}
+    result = check_answer(answer, 'a new voice', dict(DEFAULTS), 'creative')
+    assert result['changes'] == {} and result['support'] == 'unsupported'
+
+
+def test_module_plan_requires_creative_mode_and_keeps_limiter():
+    answer = {'reply': 'Metallic texture.', 'intent': 'creative', 'requiredCapabilities': ['metallic_modulation'],
+              'target': 'A metallic voice', 'support': 'approximation', 'changes': {'metallicMix': .4, 'limiterEnabled': False}}
+    assert check_answer(answer, 'metallic', dict(DEFAULTS))['changes'] == {}
+    result = check_answer(answer, 'metallic', dict(DEFAULTS), 'creative')
+    assert result['changes']['metallicMix'] == .4 and result['changes']['limiterEnabled']
+    assert result['target'] == 'A metallic voice'
+
+
+def test_capability_resolution_accepts_registered_module_ids():
+    result = check_answer({'reply': 'Remove textures.', 'intent': 'creative', 'requiredCapabilities': ['metallic', 'echo'],
+                           'changes': {'metallicMix': 0, 'echoMix': 0}}, 'remove textures',
+                          {**DEFAULTS, 'metallicMix': .5, 'echoMix': .4}, 'creative')
+    assert result['changes']['metallicMix'] == 0
+    assert result['requiredCapabilities'] == ['metallic_modulation', 'echo']
+
+
+def test_creative_module_plan_does_not_claim_perceptual_fidelity():
+    result = check_answer({'reply': 'Cavern echo.', 'intent': 'creative', 'support': 'supported',
+                           'requiredCapabilities': ['echo'], 'changes': {'echoMix': .3}},
+                          'inside a cavern', dict(DEFAULTS), 'creative')
+    assert result['support'] == 'approximation'
+
+
+def test_parameter_ids_resolve_through_capability_catalog():
+    result = check_answer({'reply': 'Removed.', 'intent': 'creative', 'requiredCapabilities': ['metallicMix', 'echoMix'],
+                           'changes': {'metallicMix': 0, 'echoMix': 0}}, 'remove effects',
+                          {**DEFAULTS, 'metallicMix': .5, 'echoMix': .4}, 'creative')
+    assert result['changes']['metallicMix'] == 0 and result['changes']['echoMix'] == 0
+    assert result['requiredCapabilities'] == ['metallic_modulation', 'echo']
 
 
 def test_prompt_carries_current_profile_and_history():
@@ -180,31 +279,27 @@ def test_api_rate_limit_per_browser(monkeypatch, tmp_path):
 
 @pytest.mark.parametrize("text,pitch", [("super deep voice, alpha male", -5), ("dramatic cinematic voice", -7), ("very high voice", 7)])
 def test_character_requests_allow_strong_pitch(text, pitch):
-    r = check_answer({"reply": "Transformed.", "intent":"transformation", "changes": {"pitchSemitones": pitch}}, text, dict(DEFAULTS))
+    r = check_answer({"reply": "Transformed.", "intent":"creative", "changes": {"pitchSemitones": pitch}}, text, dict(DEFAULTS), "creative")
     assert r["changes"]["pitchSemitones"] == pitch
 
 
-def test_enhancement_keeps_pitch_subtle_without_discarding_tone():
-    r = check_answer({"reply":"x", "intent":"enhancement", "changes":{"pitchSemitones":-7,"presenceDb":2}}, "less dramatic", dict(DEFAULTS))
-    assert r["changes"] == {"pitchSemitones":-1.5,"presenceDb":2}
-    assert "subtle" in r["note"]
+def test_enhancement_rejects_strong_pitch_changes():
+    with pytest.raises(ModelUnavailable, match="without being asked"):
+        check_answer({"reply":"x", "intent":"enhancement", "changes":{"pitchSemitones":-7,"presenceDb":2}}, "less dramatic", dict(DEFAULTS))
 
 
-
-@pytest.mark.parametrize("presence,expected", [(20, 9), (-20, -6), ("20", 9)])
-def test_numeric_limits_keep_other_voice_changes(presence, expected):
-    r = check_answer({"reply": "Dramatic.", "intent":"transformation", "changes": {"presenceDb": presence, "pitchSemitones": -7}}, "dramatic voice", dict(DEFAULTS))
-    assert r["changes"] == {"presenceDb": expected, "pitchSemitones": -7}
-    assert "Presence" in r["note"] and "limited" in r["note"]
+@pytest.mark.parametrize("presence", [20, -20])
+def test_creative_numeric_limits_reject_entire_plan(presence):
+    with pytest.raises(ModelUnavailable, match="out-of-range"):
+        check_answer({"reply": "Dramatic.", "intent":"creative", "changes": {"presenceDb": presence, "pitchSemitones": -7}}, "dramatic voice", dict(DEFAULTS), "creative")
 
 
-def test_api_reports_limited_settings_without_offline_fallback(tmp_path):
-    client = reply('{"reply":"Dramatic.","intent":"transformation","changes":{"presenceDb":20,"pitchSemitones":-7}}')
+def test_api_invalid_plan_uses_offline_fallback(tmp_path):
+    client = reply('{"reply":"Dramatic.","intent":"creative","changes":{"presenceDb":20,"pitchSemitones":-7}}')
     c = TestClient(create_app("cpu", GatewayInterpreter(CallLedger(str(tmp_path / "limits.sqlite")), client)))
-    j = c.post("/api/interpret", json={"text":"dramatic voice"}).json()
-    assert j["interpreter"] == "gateway"
-    assert j["changes"] == {"presenceDb":9, "pitchSemitones":-7}
-    assert "limited" in j["note"]
+    j = c.post("/api/interpret", json={"text":"dramatic voice", "mode":"creative"}).json()
+    assert j["interpreter"] == "offline"
+    assert "out-of-range" in j["note"]
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), True, "loud"])
@@ -215,15 +310,15 @@ def test_invalid_numeric_values_still_reject(value):
 
 @pytest.mark.parametrize("text", ["girl-like-voice", "female voice", "feminine voice", "woman voice"])
 def test_feminine_request_accepts_pitch_transformation(text):
-    r = check_answer({"reply":"Brighter and higher.","intent":"transformation","changes":{"pitchSemitones":5,"warmthDb":-2}}, text, dict(DEFAULTS))
+    r = check_answer({"reply":"Brighter and higher.","intent":"creative","changes":{"pitchSemitones":5,"warmthDb":-2}}, text, dict(DEFAULTS), "creative")
     assert r["changes"]["pitchSemitones"] == 5
 
 
 @pytest.mark.parametrize("text", ["a tiny woodland sprite", "a gravelly giant telling a story", "giọng nhẹ và thanh", "less of that, keep the character"])
 def test_freeform_transformations_do_not_require_pitch_keywords(text):
-    r = check_answer({"reply":"Applied.", "intent":"transformation", "changes":{"pitchSemitones":4.25,"presenceDb":1.5}}, text, dict(DEFAULTS))
+    r = check_answer({"reply":"Applied.", "intent":"creative", "changes":{"pitchSemitones":4.25,"presenceDb":1.5}}, text, dict(DEFAULTS), "creative")
     assert r["changes"]["pitchSemitones"] == 4.25
-    assert r["intent"] == "transformation"
+    assert r["intent"] == "creative"
 
 
 def test_invalid_intent_rejects():

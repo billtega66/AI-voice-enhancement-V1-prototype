@@ -1,5 +1,23 @@
 # AI gateway
 
+The chat's Voice mode selector defaults to Enhancement. Select Creative for character or exaggerated effects, then preview the result before using it. Mode applies to each request and does not reset existing Mixer settings.
+
+`POST /api/interpret` accepts `mode: "enhancement" | "creative"` (default enhancement). Model replies classify intent as `enhancement`, `pitch`, `creative`, `clarify`, or `unsupported`. Validation uses that intent and the selected mode instead of pitch keywords. Clarification and unsupported requests cannot change parameters. Enhancement permits pitch steps up to 1.5 semitones; Creative permits the full existing -3..3 range. The AI's intent is an interpretation, not independent proof of user intent, so preview remains important.
+
+The capability catalog is generated from the engine parameter schema and module descriptors and is available in `/api/schema`. Unsupported capabilities include formant shifting, cloning, speech synthesis, timing/prosody transfer, and reverberation. Metallic modulation, saturation, and repeating echo are implemented in both browser and CPU pipelines. Adding a DSP capability requires a module implementation in both engines and its schema descriptor; adding a new phrasing does not require a keyword rule in the gateway. The offline fallback still uses limited keyword rules.
+
+## Modular effects and candidate previews
+
+The AI describes `target`, lists `requiredCapabilities`, and classifies `support` as supported, approximation, or unsupported before proposing parameter changes. Missing capabilities prevent applying the plan. Registered module IDs are resolved to their capability IDs through the catalog. Creative controls require Creative mode; new creative changes retain the final limiter. The server labels Creative plans as approximations even if the AI calls them supported: legal controls do not prove perceptual similarity. Capability declarations are interpreted by the model and can still miss required processing.
+
+The creative chain has metallic ring modulation, soft saturation, and a stateful echo. The `echoBeforeTexture` control selects whether echo precedes or follows the texture modules. Defaults bypass all three modules, so existing profiles keep their sound. Echo runs on a bounded one-second buffer with feedback limited to 0.65. Its natural tail is truncated at the recording's end in this initial version.
+
+Chat suggestions produce Suggested and Gentler candidate profiles instead of modifying the working profile immediately. Load a recording or sample, listen to a candidate's first six seconds, and apply your choice. Candidates render locally in the browser and show peak, integrated loudness, and clipping checks; these checks do not grade the sound's similarity to the request. Applying changes updates the same saved profile and live chain used by the Mixer. A manual edit or mode change invalidates pending candidates. Ask follow-up requests after applying a candidate to refine it.
+
+Neural voice conversion, independent formant shifting, full reverberation, and automatic perceptual optimization are not implemented. Live CPU performance depends on acceleration and must be measured on the target hardware.
+
+Run `python -X utf8 scripts/check_modular_voice.py` for three live planning checks or `python -X utf8 scripts/challenge_modular_voice.py` for eight challenging requests. Both consume API quota and save results under `reports/`; neither uses the offline fallback.
+
 The AI layer follows the pattern of the reference project (gjn12-31/aiid), reimplemented in Python for this server: one OpenAI-compatible `/chat/completions` endpoint, configured only through environment variables, called only from the server.
 
 ```

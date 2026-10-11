@@ -100,7 +100,7 @@ def test_output_independent_of_chunk_size():
 def test_every_profile_parameter_changes_the_audio():
     s = make_sample_voice(FS, 6, events=[{"type": "speech", "s": 0.5, "e": 2.5, "db": -22}, {"type": "keys", "s": 2.8, "e": 3.4, "db": -24},
                                          {"type": "speech", "s": 3.8, "e": 5.6, "db": -46}])
-    base = {**DEFAULTS, "outputGainDb": 4, "limiterCeilingDb": -3, "compThresholdDb": -40}
+    base = {**DEFAULTS, "outputGainDb": 4, "limiterCeilingDb": -3, "compThresholdDb": -40, 'metallicMix': 0.2, 'distortionDrive': 0.2, 'echoMix': 0.2}
     ref = render(s.data, base, 512)
     dead = []
     for k, sc in SCHEMA.items():

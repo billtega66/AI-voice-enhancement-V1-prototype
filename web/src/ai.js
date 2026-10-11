@@ -92,7 +92,14 @@
       }
       if (style) {
         const ch = TRANSFORM_PRESETS[style];
-        Object.assign(p, ch); Object.keys(ch).forEach(x => touched.add(x)); matched = true;
+        Object.assign(p, ch); Object.keys(ch).forEach(x => touched.add(x)); matched = true; special = 'creative';
+        continue;
+      }
+      if (/\b(helium|chipmunks?|cartoon voices?)\b/.test(c)) {
+        if (!/\b(not|no|without|avoid|remove|stop|don't|do not)\b/.test(c)) {
+          p.pitchSemitones = Math.min(3, p.pitchSemitones + 3 * intensity(c));
+          touched.add('pitchSemitones'); matched = true; special = 'creative';
+        }
         continue;
       }
       const k = intensity(c);
@@ -101,7 +108,7 @@
         if (!re.test(c)) continue;
         if (kind === 'quality' && /\btoo quiet\b/.test(c)) continue;
         const ch = fn(k, p, kind === 'problem' ? 1 : (neg ? -1 : 1));
-        Object.assign(p, ch); Object.keys(ch).forEach(x => touched.add(x)); matched = true;
+        Object.assign(p, ch); Object.keys(ch).forEach(x => touched.add(x)); matched = true; special = 'creative';
       }
     }
     const changes = {}; for (const key of touched) changes[key] = p[key];
@@ -112,6 +119,9 @@
     label: 'Offline interpreter (keyword rules)',
     async interpret(text, ctx) {
       const r = localInterpret(text, ctx.profile, ctx.analysis, ctx.reference);
+      if (ctx.mode !== 'creative' && (r.special === 'creative' || Math.abs((r.changes.pitchSemitones ?? ctx.profile.pitchSemitones) - ctx.profile.pitchSemitones) > 1.5)) {
+        return { reply: 'Select Creative mode to try stronger pitch effects.', changes: {}, rejected: [] };
+      }
       if (!r.matched) return { reply: 'I could not map that to a sound change yet. Try words like warmer, clearer, deeper, steadier volume, less background noise, or softer S sounds.', changes: {} };
       return { reply: r.reply || null, changes: r.changes, special: r.special };
     },

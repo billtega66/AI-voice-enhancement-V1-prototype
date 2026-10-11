@@ -46,7 +46,10 @@ def test_claude_interpreter_sends_current_profile_and_history():
     kw = calls[0]
     assert kw["model"] == "test-model" and "compRatio (Ratio): 1..10 :1, step 0.1, now 4" in kw["system"]
     roles = [m["role"] for m in kw["messages"]]
-    assert roles == ["user", "assistant", "user"] and kw["messages"][-1]["content"] == "slightly warmer"
+    assert roles == ['user']
+    request = json.loads(kw['messages'][0]['content'])
+    assert request['request'] == 'slightly warmer'
+    assert request['recentConversation'][0]['text'] == 'podcast voice'
 
 
 def test_build_messages_alternates_roles():
