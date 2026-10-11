@@ -1,0 +1,41 @@
+{
+  "deep": {
+    "pitchSemitones": -5,
+    "warmthDb": 4,
+    "mudDb": -2,
+    "presenceDb": 1.5,
+    "hpfHz": 60,
+    "compEnabled": true,
+    "compRatio": 3,
+    "compThresholdDb": -24,
+    "loudEnabled": true,
+    "targetLufs": -16,
+    "limiterEnabled": true
+  },
+  "dramatic": {
+    "pitchSemitones": -7,
+    "warmthDb": 5,
+    "mudDb": -3,
+    "presenceDb": 3,
+    "airDb": -2,
+    "hpfHz": 50,
+    "compEnabled": true,
+    "compRatio": 4,
+    "compThresholdDb": -28,
+    "loudEnabled": true,
+    "targetLufs": -16,
+    "limiterEnabled": true
+  },
+  "feminine": {
+    "pitchSemitones": 5,
+    "warmthDb": -2,
+    "mudDb": -2,
+    "presenceDb": 2,
+    "airDb": 2,
+    "compEnabled": true,
+    "compRatio": 2.5,
+    "loudEnabled": true,
+    "targetLufs": -16,
+    "limiterEnabled": true
+  }
+}

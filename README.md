@@ -53,7 +53,7 @@ python scripts/check_llm.py   # optional live check (6 paid calls)
 - Pointing `LLM_BASE_URL` at `vllm serve` on ROCm keeps the language model on the AMD GPU.
 - Without a gateway, the server uses Claude if `ANTHROPIC_API_KEY` is set, and otherwise the offline keyword interpreter. The UI shows which one is active.
 
-Every AI answer passes structural and semantic validation before it reaches the engine. A rejected answer, a timeout or an exhausted budget falls back to the offline interpreter, with a note in the chat.
+Every AI answer passes structural and semantic validation before it reaches the engine. Finite numeric values beyond the Mixer limits are capped, with a note in the chat, while the other valid changes are retained. A rejected answer, a timeout or an exhausted budget falls back to the offline interpreter, with a note in the chat.
 
 ### AMD ROCm
 
@@ -103,3 +103,9 @@ The reference profile in `shared/reference_profile.json` contains built-in podca
 ## Team
 
 Ben (Nguyen Dinh Bac), Bill (Do Kien Quoc), Juvia (Le Thi Mai Trang). Licence to be confirmed after the dependency and model licence review described in the proposal.
+
+### Character voice transformation
+
+Describe any desired sound in the assistant, then compare Original/Enhanced. With the gateway connected, the AI interprets arbitrary wording and follow-ups, uses the recorded voice analysis, and chooses continuous pitch, EQ and dynamics settings. Suggestion buttons submit ordinary text through this same workflow. These requests work with the offline interpreter too. Deep male targets -5 semitones with added warmth; dramatic targets -7 with stronger warmth, presence and compression. Repeating a preset keeps the same targets. Uploaded recordings are reprocessed automatically; use **Use voice** to save the settings for the live microphone.
+
+The Mixer pitch range is now -12 to +12 semitones. The gateway returns a semantic intent (enhancement or transformation). Enhancement pitch steps are limited to 1.5 semitones without discarding other changes; transformations may use the full engine range. No keyword whitelist is required. The offline fallback remains rule-based and supports a smaller vocabulary. Reset restores the starting profile. Strong shifts can introduce audible artifacts, particularly at octave extremes. These effects use the existing real-time DSP pitch shifter and tone controls, not a learned voice-conversion model; they do not rewrite speech, change accent or independently control formants.

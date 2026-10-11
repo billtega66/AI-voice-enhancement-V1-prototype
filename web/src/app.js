@@ -285,7 +285,9 @@
     thinking.classList.add('thinking');
     const ctxAI = { profile: store.get(), analysis: S.analysis, reference: S.reference, history: S.history };
     let res, note = '';
-    try { res = await S.interpreter.interpret(text, ctxAI); }
+    try {
+      res = await S.interpreter.interpret(text, ctxAI);
+    }
     catch (e) {
       const code = e && e.code;
       const who = S.interpreter.name === 'server' ? 'The voice server' : 'Claude';
@@ -453,7 +455,7 @@
       if (!a) return;
       if (!a.ok) { t.innerHTML = `<tbody><tr><td class="warn">${esc(a.reason)}</td></tr></tbody>`; return; }
       const rows = [
-        ['Median pitch (F0)', f(a.f0MedianHz, 0) + ' Hz', 'kept as yours'], ['Mean pitch', f(a.f0MeanHz, 0) + ' Hz', ''], ['Pitch range (p10–p90)', f(a.f0RangeSt, 1) + ' st', ''],
+        ['Median pitch (F0)', f(a.f0MedianHz, 0) + ' Hz', 'original recording'], ['Mean pitch', f(a.f0MeanHz, 0) + ' Hz', ''], ['Pitch range (p10–p90)', f(a.f0RangeSt, 1) + ' st', ''],
         ['Formants', 'not measured in browser build', ''], ['Spectral centroid', f(a.spectralCentroidHz, 0) + ' Hz', ''], ['Spectral slope', f(a.spectralSlopeDbOct, 1) + ' dB/oct', ''],
         ['Low-mid energy (150–500 Hz)', f(a.lowMidRelDb, 1) + ' dB', f(r.lowMidRelDb, 1) + ' dB'], ['Presence (2–5 kHz)', f(a.presenceRelDb, 1) + ' dB', f(r.presenceRelDb, 1) + ' dB'],
         ['Sibilance (5–9 kHz)', f(a.sibilanceRelDb, 1) + ' dB', '≤ ' + f(r.sibilanceRelDb, 1) + ' dB'], ['HNR (estimate)', f(a.hnrDb, 1) + ' dB', ''],

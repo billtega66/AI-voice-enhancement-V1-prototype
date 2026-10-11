@@ -54,3 +54,25 @@ def test_build_messages_alternates_roles():
                              {"profile": DEFAULTS, "reference": DEFAULT_REFERENCE})
     roles = [m["role"] for m in msgs]
     assert roles[0] == "user" and all(roles[i] != roles[i + 1] for i in range(len(roles) - 1))
+
+
+def test_character_presets_are_strong_and_repeatable():
+    from voice_engine.ai.interpreter import local_interpret
+    from voice_engine.profile import DEFAULTS, DEFAULT_REFERENCE
+    for prompt, pitch in [("super deep voice, alpha male", -5), ("deep male voice", -5), ("dramatic cinematic voice", -7)]:
+        first = local_interpret(prompt, dict(DEFAULTS), None, DEFAULT_REFERENCE)["changes"]
+        assert first["pitchSemitones"] == pitch
+        assert first["limiterEnabled"]
+        second = local_interpret(prompt, {**DEFAULTS, **first}, None, DEFAULT_REFERENCE)["changes"]
+        assert first == second
+    assert "pitchSemitones" not in local_interpret("not a dramatic voice", dict(DEFAULTS), None, DEFAULT_REFERENCE)["changes"]
+
+
+
+def test_girl_like_voice_maps_to_feminine_preset():
+    from voice_engine.ai.interpreter import local_interpret
+    from voice_engine.profile import DEFAULTS, DEFAULT_REFERENCE
+    r = local_interpret("girl-like-voice", dict(DEFAULTS), None, DEFAULT_REFERENCE)
+    assert r["matched"] and r["changes"]["pitchSemitones"] == 5
+    assert r["changes"]["warmthDb"] == -2
+    assert "pitchSemitones" not in local_interpret("not a feminine voice", dict(DEFAULTS), None, DEFAULT_REFERENCE)["changes"]

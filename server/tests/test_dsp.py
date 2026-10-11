@@ -125,3 +125,16 @@ def test_faster_than_real_time(sample):
     render(sample.data[:FS], DEFAULTS)  # JIT warm-up
     t0 = time.perf_counter(); render(sample.data, DEFAULTS)
     assert (time.perf_counter() - t0) / (len(sample.data) / FS) < 0.5
+
+
+@pytest.mark.parametrize("semitones", [-12, -7, -5, 7, 12])
+def test_character_pitch_moves_frequency_without_changing_duration(semitones):
+    x = tone(240, 3, -20)
+    y = render(x, only(pitchSemitones=semitones))
+    segment = y[FS:2 * FS]
+    spectrum = np.abs(np.fft.rfft(segment * np.hanning(len(segment))))
+    peak = np.argmax(spectrum) * FS / len(segment)
+    expected = 240 * 2 ** (semitones / 12)
+    assert abs(peak - expected) < 12
+    assert len(y) == len(x)
+    assert np.isfinite(y).all()

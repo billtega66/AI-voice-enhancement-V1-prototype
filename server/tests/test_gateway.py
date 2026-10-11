@@ -104,9 +104,6 @@ def test_fenced_json_is_accepted():
     ({"changes": {}}, "warmer", "wrong shape"),
     ({"reply": "x", "changes": {}, "secret": 1}, "warmer", "unexpected fields"),
     ({"reply": "x", "changes": {"hackerKey": 1}}, "warmer", "do not exist"),
-    ({"reply": "x", "changes": {"warmthDb": 40}}, "warmer", "out-of-range"),
-    ({"reply": "x", "changes": {"pitchSemitones": -1}}, "make it warmer", "without being asked"),
-    ({"reply": "x", "changes": {"pitchSemitones": -3}}, "make it deeper", "too far"),
 ])
 def test_semantic_validation_rejects(obj, text, msg):
     with pytest.raises(ModelUnavailable, match=msg):
@@ -179,3 +176,56 @@ def test_api_rate_limit_per_browser(monkeypatch, tmp_path):
     assert c.post("/api/interpret", json={"text": "warmer"}).json()["interpreter"] == "gateway"
     j = c.post("/api/interpret", json={"text": "warmer"}).json()
     assert j["interpreter"] == "offline" and "wait" in j["note"]
+
+
+@pytest.mark.parametrize("text,pitch", [("super deep voice, alpha male", -5), ("dramatic cinematic voice", -7), ("very high voice", 7)])
+def test_character_requests_allow_strong_pitch(text, pitch):
+    r = check_answer({"reply": "Transformed.", "intent":"transformation", "changes": {"pitchSemitones": pitch}}, text, dict(DEFAULTS))
+    assert r["changes"]["pitchSemitones"] == pitch
+
+
+def test_enhancement_keeps_pitch_subtle_without_discarding_tone():
+    r = check_answer({"reply":"x", "intent":"enhancement", "changes":{"pitchSemitones":-7,"presenceDb":2}}, "less dramatic", dict(DEFAULTS))
+    assert r["changes"] == {"pitchSemitones":-1.5,"presenceDb":2}
+    assert "subtle" in r["note"]
+
+
+
+@pytest.mark.parametrize("presence,expected", [(20, 9), (-20, -6), ("20", 9)])
+def test_numeric_limits_keep_other_voice_changes(presence, expected):
+    r = check_answer({"reply": "Dramatic.", "intent":"transformation", "changes": {"presenceDb": presence, "pitchSemitones": -7}}, "dramatic voice", dict(DEFAULTS))
+    assert r["changes"] == {"presenceDb": expected, "pitchSemitones": -7}
+    assert "Presence" in r["note"] and "limited" in r["note"]
+
+
+def test_api_reports_limited_settings_without_offline_fallback(tmp_path):
+    client = reply('{"reply":"Dramatic.","intent":"transformation","changes":{"presenceDb":20,"pitchSemitones":-7}}')
+    c = TestClient(create_app("cpu", GatewayInterpreter(CallLedger(str(tmp_path / "limits.sqlite")), client)))
+    j = c.post("/api/interpret", json={"text":"dramatic voice"}).json()
+    assert j["interpreter"] == "gateway"
+    assert j["changes"] == {"presenceDb":9, "pitchSemitones":-7}
+    assert "limited" in j["note"]
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), True, "loud"])
+def test_invalid_numeric_values_still_reject(value):
+    with pytest.raises(ModelUnavailable):
+        check_answer({"reply":"x", "changes":{"presenceDb":value}}, "clearer", dict(DEFAULTS))
+
+
+@pytest.mark.parametrize("text", ["girl-like-voice", "female voice", "feminine voice", "woman voice"])
+def test_feminine_request_accepts_pitch_transformation(text):
+    r = check_answer({"reply":"Brighter and higher.","intent":"transformation","changes":{"pitchSemitones":5,"warmthDb":-2}}, text, dict(DEFAULTS))
+    assert r["changes"]["pitchSemitones"] == 5
+
+
+@pytest.mark.parametrize("text", ["a tiny woodland sprite", "a gravelly giant telling a story", "giọng nhẹ và thanh", "less of that, keep the character"])
+def test_freeform_transformations_do_not_require_pitch_keywords(text):
+    r = check_answer({"reply":"Applied.", "intent":"transformation", "changes":{"pitchSemitones":4.25,"presenceDb":1.5}}, text, dict(DEFAULTS))
+    assert r["changes"]["pitchSemitones"] == 4.25
+    assert r["intent"] == "transformation"
+
+
+def test_invalid_intent_rejects():
+    with pytest.raises(ModelUnavailable, match="wrong shape"):
+        check_answer({"reply":"x", "intent":"invalid", "changes":{}}, "x", dict(DEFAULTS))

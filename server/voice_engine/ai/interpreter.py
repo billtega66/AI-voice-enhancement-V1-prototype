@@ -12,7 +12,7 @@ import os
 import re
 
 from ..analysis import match_to_reference
-from ..profile import DEFAULTS, SCHEMA, validate_changes
+from ..profile import TRANSFORM_PRESETS, DEFAULTS, SCHEMA, validate_changes
 
 A = re.ASCII  # JavaScript \w and \b are ASCII-only; match that behaviour
 
@@ -80,6 +80,22 @@ def local_interpret(text: str, profile: dict, analysis: dict | None, ref: dict) 
         matched, special = True, "podcast"
     clauses = [c.strip() for c in re.split(r"[,.;!?]|\bbut\b|\band\b|\bthen\b|\balso\b", t, flags=A) if c and c.strip()]
     for c in clauses:
+        # Character requests select absolute targets, so repeating them is stable.
+        negated = re.search(r"\b(less|not|without|reduce|remove|too)\b", c, A)
+        style = None
+        if not negated:
+            if re.search(r"\b(female|feminine|girl|woman|women)\b", c, A):
+                style = "feminine"
+            elif re.search(r"\b(dramatic|cinematic|villain|monster)\b", c, A):
+                style = "dramatic"
+            elif re.search(r"\b(deep\w*|bass\w*|male|masculine|alpha)\b", c, A) and re.search(r"\b(super|very|much|extreme\w*|male|masculine|alpha)\b", c, A):
+                style = "deep"
+        if style:
+            ch = TRANSFORM_PRESETS[style]
+            p.update(ch)
+            touch(ch.keys())
+            matched = True
+            continue
         k = _intensity(c)
         neg = bool(re.search(r"\b(less|not so|not as|too|without|reduce|cut|tone down|remove|decrease|turn down|lower the)\b", c, A))
         for rx, kind, fn in RULES:
@@ -96,7 +112,7 @@ def local_interpret(text: str, profile: dict, analysis: dict | None, ref: dict) 
 
 PLAIN = {
     "warmthDb": ("more warmth", "less warmth"), "mudDb": ("more low-mid body", "less boominess"), "presenceDb": ("more clarity", "less edge"),
-    "airDb": ("more brightness", "less brightness"), "pitchSemitones": ("a slightly higher pitch", "a slightly deeper pitch"),
+    "airDb": ("more brightness", "less brightness"), "pitchSemitones": ("a higher pitch", "a deeper pitch"),
     "deEssThresholdDb": ("gentler S control", "softer S sounds"), "deEssMaxDb": ("softer S sounds", "gentler S control"),
     "compRatio": ("steadier volume", "more natural dynamics"), "compThresholdDb": ("more natural dynamics", "steadier volume"),
     "targetLufs": ("louder output", "quieter output"), "nsAmount": ("more background cleanup", "less background cleanup"),
@@ -156,7 +172,7 @@ def build_messages(history: list, text: str, ctx: dict) -> tuple[str, list]:
         "RULES:",
         "- Start from the current values and change only what the request needs. Never reset settings the user did not mention, including ones they set by hand in the Mixer.",
         "- \"slightly\"/\"a bit\" means small steps (EQ about 1 dB, ratio about 0.5); no qualifier means moderate (EQ 2-3 dB); \"much\" means larger.",
-        "- Keep the speaker recognisable. Prefer warmth EQ for \"deeper\". Use pitchSemitones only when the user clearly asks for a deeper/higher voice, and stay within +/-1.5 unless asked for more.",
+        "- Interpret arbitrary descriptions in any language using conversation context and the measured voice. Choose continuous pitch, tone and dynamics settings rather than fixed presets. Subtle requests use small steps; voice transformations may use the full supported range. Pitch offsets are relative to the original recording. Explain unsupported effects such as changing accent or emotional delivery.",
         "- For \"podcast\", \"professional\" or \"broadcast\", move toward the personalised match above rather than generic numbers.",
         "- Sharp S sounds: de-esser (lower threshold and/or more max reduction). Background, keyboard, paper or fan noise: noise suppression and speech detection. Uneven volume: compressor.",
         "- reply: one or two short sentences in the same language the user wrote in, plain words, no units or jargon (no dB, Hz, LUFS, ratio, compressor, EQ).",

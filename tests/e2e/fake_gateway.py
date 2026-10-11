@@ -18,7 +18,11 @@ async def chat(req: Request, authorization: str = Header("")):
     system, user = body["messages"][0]["content"], json.loads(body["messages"][1]["content"])
     text = user["request"].lower()
     now = lambda k: float(re.search(rf"^{k} \(.*?now (-?[0-9.]+)$", system, re.M).group(1))
-    if "podcast" in text:
+    if "woodland sprite" in text:
+        out = {"reply":"A lighter character voice.", "intent":"transformation", "changes":{"pitchSemitones":4.25,"presenceDb":1.5}}
+    elif "less of that" in text:
+        out = {"reply":"A gentler version of that character.", "intent":"transformation", "changes":{"pitchSemitones":2}}
+    elif "podcast" in text:
         out = {"reply": "I gave it a warmer, steadier podcast sound.", "changes": {"warmthDb": 3, "presenceDb": 2, "compRatio": 3}}
     elif "clearer" in text:
         out = {"reply": "A little clearer; everything else is unchanged.", "changes": {"presenceDb": now("presenceDb") + 1}}

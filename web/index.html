@@ -303,16 +303,16 @@ h3{font-size:16px}
       <span class="small muted who" id="aiWho">AI: offline interpreter</span>
     </div>
     <div class="msgs" id="msgs" aria-live="polite">
-      <div class="empty" id="chatEmpty"><span class="assistant-mark" aria-hidden="true">✦</span><h3>What’s your ideal sound?</h3><p>Tell me what you want to change. I’ll adjust your voice settings so you can hear the difference.</p><span class="small muted">Try a suggestion below to get started.</span></div>
+      <div class="empty" id="chatEmpty"><span class="assistant-mark" aria-hidden="true">✦</span><h3>What’s your ideal sound?</h3><p>Describe any voice tone, character or register. I’ll tailor pitch, tone and dynamics to your words so you can hear the difference.</p><span class="small muted">Try a suggestion below to get started.</span></div>
     </div>
     <div class="suggest" id="suggest">
       <button>Warm, clear podcast voice</button>
       <button>Less background noise</button>
-      <button>Keep my volume steady</button>
-      <button>Softer S sounds</button>
+      <button data-transform="deep">Deep male voice</button>
+      <button data-transform="dramatic">Dramatic cinematic voice</button>
     </div>
     <form class="composer" id="composer" autocomplete="off">
-      <textarea id="prompt" rows="2" maxlength="2000" placeholder="Describe how you want your voice to sound..." aria-label="Describe how you want your voice to sound"></textarea>
+      <textarea id="prompt" rows="2" maxlength="2000" placeholder="Describe a voice: gentle and airy, a powerful narrator, or your own idea..." aria-label="Describe how you want your voice to sound"></textarea>
       <button class="btn primary" id="send" type="submit" aria-label="Send voice request">Send <span aria-hidden="true">↗</span></button>
     </form><p class="composer-hint">Enter to send · Shift + Enter for a new line</p>
   </section>

@@ -9,11 +9,12 @@
 (function (root) {
   'use strict';
   const VP = root.VoiceProfile, VA = root.VoiceAnalysis;
+  const TRANSFORM_PRESETS = root.VOICE_TRANSFORM_PRESETS || (typeof require === "function" ? require("../../shared/voice_transform_presets.json") : null);
 
   /* ---------------- shared helpers ---------------- */
   const PLAIN = {
     warmthDb: ['more warmth', 'less warmth'], mudDb: ['more low-mid body', 'less boominess'], presenceDb: ['more clarity', 'less edge'],
-    airDb: ['more brightness', 'less brightness'], pitchSemitones: ['a slightly higher pitch', 'a slightly deeper pitch'],
+    airDb: ['more brightness', 'less brightness'], pitchSemitones: ['a higher pitch', 'a deeper pitch'],
     deEssThresholdDb: ['gentler S control', 'softer S sounds'], deEssMaxDb: ['softer S sounds', 'gentler S control'], deEssEnabled: ['S-sound control on', 'S-sound control off'],
     compRatio: ['steadier volume', 'more natural dynamics'], compThresholdDb: ['more natural dynamics', 'steadier volume'], compEnabled: ['volume levelling on', 'volume levelling off'],
     makeupDb: ['a little more level', 'a little less level'], targetLufs: ['louder output', 'quieter output'], outputGainDb: ['louder output', 'quieter output'],
@@ -82,6 +83,18 @@
     }
     const clauses = t.split(/[,.;!?]|\bbut\b|\band\b|\bthen\b|\balso\b/).map(s => s.trim()).filter(Boolean);
     for (const c of clauses) {
+      const negated = /\b(less|not|without|reduce|remove|too)\b/.test(c);
+      let style = null;
+      if (!negated) {
+        if (/\b(female|feminine|girl|woman|women)\b/.test(c)) style = 'feminine';
+        else if (/\b(dramatic|cinematic|villain|monster)\b/.test(c)) style = 'dramatic';
+        else if (/\b(deep\w*|bass\w*|male|masculine|alpha)\b/.test(c) && /\b(super|very|much|extreme\w*|male|masculine|alpha)\b/.test(c)) style = 'deep';
+      }
+      if (style) {
+        const ch = TRANSFORM_PRESETS[style];
+        Object.assign(p, ch); Object.keys(ch).forEach(x => touched.add(x)); matched = true;
+        continue;
+      }
       const k = intensity(c);
       const neg = /\b(less|not so|not as|too|without|reduce|cut|tone down|remove|decrease|turn down|lower the)\b/.test(c);
       for (const [re, kind, fn] of RULES) {
@@ -123,7 +136,7 @@
       'RULES:',
       '- Start from the current values and change only what the request needs. Never reset settings the user did not mention, including ones they set by hand in the Mixer.',
       '- "slightly"/"a bit" means small steps (EQ about 1 dB, ratio about 0.5); no qualifier means moderate (EQ 2-3 dB); "much" means larger.',
-      '- Keep the speaker recognisable. Prefer warmth EQ for "deeper". Use pitchSemitones only when the user clearly asks for a deeper/higher voice, and stay within +/-1.5 unless asked for more.',
+      '- Interpret arbitrary descriptions in any language and conversation context. Choose continuous pitch, tone and dynamics settings rather than fixed presets. Subtle enhancements use small changes; explicit transformations can use the full range. Pitch offsets refer to the original recording. Use measured pitch to personalise requested registers. Explain effects the DSP cannot produce, such as changing accent or emotional delivery.',
       '- For "podcast", "professional" or "broadcast", move toward the personalised match above rather than generic numbers.',
       '- Sharp S sounds: de-esser (lower threshold and/or more max reduction). Background, keyboard, paper or fan noise: noise suppression and speech detection. Uneven volume: compressor.',
       '- reply: one or two short sentences in the same language the user wrote in, plain words, no units or jargon (no dB, Hz, LUFS, ratio, compressor, EQ).',

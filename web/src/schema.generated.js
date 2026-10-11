@@ -25,7 +25,7 @@ window.VOICE_SCHEMA_DOC = {
     },
     {
       "id": "pitch",
-      "name": "Pitch"
+      "name": "Voice transformation"
     },
     {
       "id": "deess",
@@ -169,8 +169,8 @@ window.VOICE_SCHEMA_DOC = {
       "group": "pitch",
       "label": "Pitch shift",
       "type": "num",
-      "min": -3,
-      "max": 3,
+      "min": -12,
+      "max": 12,
       "step": 0.25,
       "unit": "st",
       "def": 0
@@ -320,4 +320,45 @@ window.VOICE_REFERENCE = {
   "sibilanceRelDb": -24,
   "loudnessRangeLu": 6,
   "noiseFloorDb": -60
+};
+window.VOICE_TRANSFORM_PRESETS = {
+  "deep": {
+    "pitchSemitones": -5,
+    "warmthDb": 4,
+    "mudDb": -2,
+    "presenceDb": 1.5,
+    "hpfHz": 60,
+    "compEnabled": true,
+    "compRatio": 3,
+    "compThresholdDb": -24,
+    "loudEnabled": true,
+    "targetLufs": -16,
+    "limiterEnabled": true
+  },
+  "dramatic": {
+    "pitchSemitones": -7,
+    "warmthDb": 5,
+    "mudDb": -3,
+    "presenceDb": 3,
+    "airDb": -2,
+    "hpfHz": 50,
+    "compEnabled": true,
+    "compRatio": 4,
+    "compThresholdDb": -28,
+    "loudEnabled": true,
+    "targetLufs": -16,
+    "limiterEnabled": true
+  },
+  "feminine": {
+    "pitchSemitones": 5,
+    "warmthDb": -2,
+    "mudDb": -2,
+    "presenceDb": 2,
+    "airDb": 2,
+    "compEnabled": true,
+    "compRatio": 2.5,
+    "loudEnabled": true,
+    "targetLufs": -16,
+    "limiterEnabled": true
+  }
 };

@@ -159,7 +159,7 @@ def create_app(backend_name: str | None = None, interpreter=None) -> FastAPI:
             used, note = OfflineInterpreter(), f"{interp.name} failed ({e.__class__.__name__}); the offline interpreter handled this."
             res = used.interpret(body.text, ctx)
         resp = JSONResponse({"reply": res.get("reply"), "changes": res.get("changes", {}), "rejected": res.get("rejected", []),
-                             "interpreter": used.name, "model": getattr(used, "model", None), "note": note})
+                             "intent": res.get("intent"), "interpreter": used.name, "model": getattr(used, "model", None), "note": note or res.get("note")})
         if "voice_guest" not in request.cookies:
             resp.set_cookie("voice_guest", owner, max_age=365 * 86400, httponly=True, samesite="lax")
         return resp

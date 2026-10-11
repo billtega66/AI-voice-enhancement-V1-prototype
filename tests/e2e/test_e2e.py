@@ -225,3 +225,41 @@ def test_studio_responsive_and_theme(page_factory, dist_url, width, height):
     pg.click('[data-view=mixer]')
     assert ev(pg, 'document.documentElement.scrollWidth <= window.innerWidth')
     assert not pg.errors, pg.errors
+
+
+@pytest.mark.parametrize("prompt,pitch", [("Deep male voice", -5), ("Dramatic cinematic voice", -7)])
+def test_character_transform_updates_uploaded_audio(page_factory, server_url, tmp_path, prompt, pitch):
+    import math
+    import struct
+    import wave
+    path = tmp_path / "voice.wav"
+    with wave.open(str(path), "wb") as wav:
+        wav.setparams((1, 2, 48000, 0, "NONE", "not compressed"))
+        wav.writeframes(b"".join(struct.pack("<h", int(8000 * math.sin(2 * math.pi * 240 * i / 48000))) for i in range(48000 * 3)))
+    pg = page_factory(server_url)
+    pg.locator('input[type="file"]').first.set_input_files(str(path))
+    pg.wait_for_function("window.__ve.preview.enhData && window.__ve.preview.version === window.__ve.store.version")
+    before = ev(pg, "window.__ve.preview.renders")
+    pg.locator("#suggest button", has_text=prompt).click()
+    pg.wait_for_function("!window.__ve.S.busy")
+    pg.wait_for_function(f"window.__ve.preview.renders > {before} && window.__ve.preview.version === window.__ve.store.version")
+    assert ev(pg, "window.__ve.store.get().pitchSemitones") == pitch
+    assert ev(pg, "window.__ve.preview.enhData.some((v,i)=>Math.abs(v-window.__ve.S.rec.data[i])>0.01)")
+    assert ev(pg, "window.__ve.preview.enhData.every(Number.isFinite)")
+    pg.click('#playBtn')
+    assert ev(pg, "window.__ve.player.which") == "enhanced"
+
+
+def test_freeform_text_drives_transformation_and_rerenders(page_factory, gateway_server_url):
+    url, _ = gateway_server_url
+    pg = page_factory(url)
+    pg.click('#sampleBtn')
+    pg.wait_for_function('window.__ve.preview.enhData && window.__ve.preview.version === window.__ve.store.version')
+    before = ev(pg, 'window.__ve.preview.renders')
+    send(pg, 'a tiny woodland sprite')
+    pg.wait_for_function(f'window.__ve.preview.renders > {before} && window.__ve.preview.version === window.__ve.store.version')
+    assert ev(pg, 'window.__ve.store.get().pitchSemitones') == 4.25
+    assert ev(pg, 'window.__ve.store.get().presenceDb') == 1.5
+    assert 'offline interpreter handled' not in pg.inner_text('#msgs')
+    send(pg, 'less of that, keep the character')
+    assert ev(pg, 'window.__ve.store.get().pitchSemitones') == 2

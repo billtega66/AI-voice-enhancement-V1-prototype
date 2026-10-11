@@ -71,3 +71,5 @@ def full_profile(params: dict | None) -> dict:
     """Defaults overlaid with validated params (invalid entries dropped)."""
     ok, _ = validate_changes(params or {})
     return {**DEFAULTS, **ok}
+
+TRANSFORM_PRESETS = json.loads((SHARED / "voice_transform_presets.json").read_text())

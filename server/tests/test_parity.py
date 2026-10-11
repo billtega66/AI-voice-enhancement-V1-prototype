@@ -15,6 +15,8 @@ from voice_engine.dsp import render_offline
 from voice_engine.profile import DEFAULT_REFERENCE, DEFAULTS, SCHEMA, validate_changes
 
 PROFILES = [
+    {"pitchSemitones": -7, "warmthDb": 5, "mudDb": -3},
+    {"pitchSemitones": 12},
     {},
     {"nsEnabled": False, "vadEnabled": False, "hpfEnabled": False, "deEssEnabled": False, "compEnabled": False, "loudEnabled": False, "limiterEnabled": False, "makeupDb": 0},
     {"pitchSemitones": -1.5, "warmthDb": 4, "presenceDb": 3, "airDb": 2, "mudDb": -3, "inputGainDb": 6},
@@ -60,6 +62,13 @@ def test_validation_matches(case):
 
 
 PROMPTS = [
+    "girl-like-voice",
+    "female voice",
+    "feminine voice",
+    "not a feminine voice",
+    "super deep voice, alpha male",
+    "dramatic cinematic voice",
+    "not a dramatic voice",
     "Make my voice warmer, clearer, and more professional, like a podcast.",
     "My voice sounds thin and inconsistent. Make it warmer and keep the volume consistent.",
     "Good, but make it slightly deeper and reduce the sharp S sounds.",
